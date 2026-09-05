@@ -18,14 +18,14 @@ const targetBaseUrl =
 console.log(`[keepalive] Initialized. Target: ${targetBaseUrl} (interval: ${INTERVAL_MINUTES}m)`);
 
 async function sendPing() {
-  const pingUrl = new URL("/dashboard", targetBaseUrl).href;
+  const pingUrl = new URL("/api/health", targetBaseUrl).href;
   try {
     const res = await fetch(pingUrl, {
       method: "GET",
       headers: {
         "User-Agent": "OmniRoute-KeepAlive/1.0",
       },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(30000),
     });
     console.log(`[keepalive] ${new Date().toISOString()} - Ping sent to ${pingUrl} - Status: ${res.status}`);
   } catch (err) {
