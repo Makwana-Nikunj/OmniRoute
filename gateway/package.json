@@ -1,0 +1,32 @@
+{
+  "name": "omniroute-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Path A scaffold — minimal Next.js 16 app that embeds @omniroute/open-sse as a workspace dep and exposes /v1/chat/completions.",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 20128",
+    "build": "next build",
+    "start": "next start -p 20128",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx/esm --test tests/unit/*.test.ts"
+  },
+  "dependencies": {
+    "@omniroute/open-sse": "file:../open-sse",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.22.2 <23 || >=24.0.0 <27"
+  }
+}

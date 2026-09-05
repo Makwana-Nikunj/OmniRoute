@@ -1,0 +1,11 @@
+# Gateway-specific ignores. The project-root .gitignore already covers
+# `node_modules/` and `/.next/` for the whole tree, but listing them here
+# makes the gateway self-contained for anyone who copies it elsewhere.
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
