@@ -6,7 +6,7 @@
  * This script periodically pings the public URL to keep the instance active.
  */
 
-const INTERVAL_MINUTES = Math.max(1, Number(process.env.KEEP_ALIVE_INTERVAL_MINUTES) || 14);
+const INTERVAL_MINUTES = Math.max(1, Number(process.env.KEEP_ALIVE_INTERVAL_MINUTES) || 5);
 const INTERVAL_MS = INTERVAL_MINUTES * 60 * 1000;
 
 // RENDER_EXTERNAL_URL is automatically provided by Render for web services

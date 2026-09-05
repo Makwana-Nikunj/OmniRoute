@@ -11,12 +11,11 @@ set -eu
 DATA_DIR="${DATA_DIR:-/app/data}"
 DB_PATH="${DATA_DIR}/storage.sqlite"
 
-# Bound V8 heap to 360MB — 280 caused OOM at 275MB in V8 mark-compact.
-# Ensure memory is at least 360MB even if dashboard env was set to 280.
-if [ -z "${OMNIROUTE_MEMORY_MB:-}" ] || [ "${OMNIROUTE_MEMORY_MB}" -lt 350 ] 2>/dev/null; then
-  export OMNIROUTE_MEMORY_MB=360
-fi
-export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=${OMNIROUTE_MEMORY_MB}"
+# Bound V8 heap to 300MB for Render Free tier (512MB container limit).
+# 360MB pushed container RSS to 536MB, hitting the 512MB cgroup ceiling and freezing CPU in memory reclaim.
+# 300MB gives Node plenty of heap while keeping container RSS at ~410MB safely below the 512MB limit.
+export OMNIROUTE_MEMORY_MB="300"
+export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=300"
 
 # Lean startup: skip non-essential boot modules (skills, compliance, cloud sync, spend
 # tracking, proxy schedulers, vacuum, cleanup, model catalog warmup, API bridge, etc.)
