@@ -11,9 +11,15 @@ set -eu
 DATA_DIR="${DATA_DIR:-/app/data}"
 DB_PATH="${DATA_DIR}/storage.sqlite"
 
-# Bound V8 heap to 280MB so container has ample headroom below Render's 512MB limit
-export OMNIROUTE_MEMORY_MB="${OMNIROUTE_MEMORY_MB:-280}"
+# Bound V8 heap to 350MB — 280 caused OOM at 275MB during startup.
+# Container RSS limit is 512MB; Node overhead + SQLite + Litestream ~100MB → 350MB safe.
+export OMNIROUTE_MEMORY_MB="${OMNIROUTE_MEMORY_MB:-350}"
 export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=${OMNIROUTE_MEMORY_MB}"
+
+# Lean startup: skip non-essential boot modules (skills, compliance, cloud sync, spend
+# tracking, proxy schedulers, vacuum, cleanup, model catalog warmup, API bridge, etc.)
+# to reduce cold-start time and memory footprint for API-proxy-only deployments.
+export OMNIROUTE_LEAN_STARTUP="true"
 
 # Disable heavy background sync tasks and subsystems that waste CPU and memory on Render Free
 export ARENA_ELO_SYNC_ENABLED="false"

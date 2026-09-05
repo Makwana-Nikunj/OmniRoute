@@ -108,6 +108,18 @@ function isBackgroundServicesDisabled(): boolean {
   return new Set(["1", "true", "yes", "on"]).has(raw.trim().toLowerCase());
 }
 
+/**
+ * Lean startup mode for constrained deployments (e.g. Render free tier).
+ * Skips non-essential boot modules: API bridge, cloud sync, spend tracking,
+ * skills, compliance, proxy schedulers, vacuum, cleanup, model catalog warmup.
+ * Keeps essentials: graceful shutdown, DB, secrets, settings hydration, quota fetchers.
+ */
+function isLeanStartup(): boolean {
+  const raw = process.env.OMNIROUTE_LEAN_STARTUP;
+  if (!raw) return false;
+  return new Set(["1", "true", "yes", "on"]).has(raw.trim().toLowerCase());
+}
+
 async function ensureSecrets(): Promise<void> {
   let getPersistedSecret = (_key: string): string | null => null;
   let persistSecret = (_key: string, _value: string): void => {};
@@ -386,220 +398,260 @@ export async function registerNodejs(): Promise<void> {
   await scanComboModelNameCollisionsAtBoot();
   await warmAdaptiveVirtualLanesIntoRuntime();
 
+  const lean = isLeanStartup();
+  if (lean) {
+    console.log("[STARTUP] Lean startup mode — skipping non-essential boot modules");
+  }
+
+  // ── Essential modules (always loaded) ──────────────────────────────────
   const [
     { initGracefulShutdown },
-    { initApiBridgeServer },
-    { startBackgroundRefresh },
-    { ensureCloudSyncInitialized },
-    { startProviderLimitsSyncScheduler },
     { getSettings },
     { applyRuntimeSettings },
-    { startRuntimeConfigHotReload },
-    { startSpendBatchWriter },
-    { startCleanupScheduler },
-    { registerDefaultGuardrails },
-    { ensurePersistentManagementPasswordHash },
-    { skillExecutor },
-    { registerBuiltinSkills },
   ] = await Promise.all([
     import("@/lib/gracefulShutdown"),
-    import("@/lib/apiBridgeServer"),
-    import("@/domain/quotaCache"),
-    import("@/lib/initCloudSync"),
-    import("@/shared/services/providerLimitsSyncScheduler"),
     import("@/lib/db/settings"),
     import("@/lib/config/runtimeSettings"),
-    import("@/lib/config/hotReload"),
-    import("@/lib/spend/batchWriter"),
-    import("@/lib/db/cleanup"),
-    import("@/lib/guardrails"),
-    import("@/lib/auth/managementPassword"),
-    import("@/lib/skills/executor"),
-    import("@/lib/skills/builtins"),
   ]);
-
-  // Proxy health scheduler (auto-removes dead proxies on interval)
-  await import("@/lib/proxyHealth/scheduler");
-
-  // Free-proxy auto-sync scheduler (re-fetches free-proxy sources on interval, #7079)
-  await import("@/lib/freeProxyProviders/scheduler");
-
   initGracefulShutdown();
-  initApiBridgeServer();
-  startSpendBatchWriter();
-  registerDefaultGuardrails();
-  registerBuiltinSkills(skillExecutor);
-  console.log("[STARTUP] Spend batch writer started");
-  console.log("[STARTUP] Guardrail registry initialized");
-  console.log("[STARTUP] Builtin skill handlers registered");
-  if (!isBackgroundServicesDisabled()) {
-    startBackgroundRefresh();
-    console.log("[STARTUP] Quota cache background refresh started");
-    startProviderLimitsSyncScheduler();
-    console.log("[STARTUP] Provider limits sync scheduler started");
-    const { startQuotaAutoPing } = await import("@/lib/services/quotaAutoPing");
-    startQuotaAutoPing();
-    console.log("[STARTUP] Quota auto-ping scheduler started (opt-in, no-op until enabled)");
-    const cloudSyncInitialized = await ensureCloudSyncInitialized();
-    console.log(
-      `[STARTUP] Cloud/model sync background bootstrap ${cloudSyncInitialized ? "initialized" : "skipped"}`
-    );
-    const { initBatchProcessor } = await import("@omniroute/open-sse/services/batchProcessor");
-    initBatchProcessor();
-    console.log("[STARTUP] Batch processor started");
-  }
 
-  try {
-    const [
-      { migrateCodexConnectionDefaultsFromLegacySettings },
-      { startSessionAccountAffinityCleanup },
-      { seedDefaultModelAliases },
-    ] = await Promise.all([
-      import("@/lib/providers/codexConnectionDefaults"),
-      import("@/lib/db/sessionAccountAffinity"),
-      import("@/lib/modelAliasSeed"),
-    ]);
-    let settings = await getSettings();
-    const passwordState = await ensurePersistentManagementPasswordHash({
-      logger: console,
-      settings,
-      source: "startup",
-    });
-    settings = passwordState.settings;
-    const runtimeChanges = await applyRuntimeSettings(settings, { force: true, source: "startup" });
-    if (runtimeChanges.length > 0) {
-      console.log(
-        `[STARTUP] Runtime settings hydrated: ${runtimeChanges
-          .map((entry) => entry.section)
-          .join(", ")}`
-      );
-    }
-
-    // Restore Global System Prompt into in-memory config (#2468/#2470)
-    if (settings.systemPrompt) {
-      const { setSystemPromptConfig } =
-        await import("@omniroute/open-sse/services/systemPrompt.ts");
-      setSystemPromptConfig(settings.systemPrompt);
-      console.log("[STARTUP] Global System Prompt restored from settings");
-    }
-
-    // Restore the proxy-level Thinking-Budget config (#5312 RC-A). It lives in
-    // `settings.thinkingBudget` and is NOT covered by applyRuntimeSettings, so
-    // without this the dashboard mode (auto/custom/adaptive) silently reverts to
-    // the passthrough default on every restart. Previously this was only wired into
-    // the unused `server-init.ts`, so it never ran in production.
-    const { hydrateThinkingBudgetConfig } =
-      await import("@omniroute/open-sse/services/thinkingBudget.ts");
-    if (hydrateThinkingBudgetConfig(settings)) {
-      console.log("[STARTUP] Thinking-Budget config restored from settings");
-    }
-
-    // Restore the Task-Aware Smart Routing config (#8601). It lives in
-    // `settings.taskRouting` (written as a JSON string by PUT /api/settings/task-routing)
-    // and is NOT covered by applyRuntimeSettings, so without this the feature silently
-    // reverts to disabled + the default model map on every restart. Same shape as the
-    // Thinking-Budget restore above; must live here, not in the unused server-init.ts.
-    const { hydrateTaskRoutingConfig } =
-      await import("@omniroute/open-sse/services/taskAwareRouter.ts");
-    if (hydrateTaskRoutingConfig(settings)) {
-      console.log("[STARTUP] Task-Aware Routing config restored from settings");
-    }
-
-    const seededModelAliases = await seedDefaultModelAliases();
-    console.log(
-      `[STARTUP] Model alias seed: applied=${seededModelAliases.applied.length}, skipped=${seededModelAliases.skipped.length}, removed=${seededModelAliases.removed.length}, failed=${seededModelAliases.failed.length}`
-    );
-    startSessionAccountAffinityCleanup();
-
-    const migration = await migrateCodexConnectionDefaultsFromLegacySettings();
-    if (migration.migrated) {
-      console.log(
-        `[STARTUP] Migrated Codex connection defaults for ${migration.updatedConnectionIds.length} connection(s)`
-      );
-      if (settings.cloudEnabled === true) {
-        const [{ syncToCloud }, { getConsistentMachineId }] = await Promise.all([
-          import("@/lib/cloudSync"),
-          import("@/shared/utils/machineId"),
-        ]);
-        const machineId = await getConsistentMachineId();
-        await syncToCloud(machineId);
-        console.log("[STARTUP] Synced migrated Codex connection defaults to cloud");
+  // ── Lean-mode settings hydration (minimal) ────────────────────────────
+  if (lean) {
+    try {
+      const settings = await getSettings();
+      const runtimeChanges = await applyRuntimeSettings(settings, { force: true, source: "startup" });
+      if (runtimeChanges.length > 0) {
+        console.log(
+          `[STARTUP] Runtime settings hydrated: ${runtimeChanges
+            .map((entry) => entry.section)
+            .join(", ")}`
+        );
       }
+      // Restore Global System Prompt into in-memory config (#2468/#2470)
+      if (settings.systemPrompt) {
+        const { setSystemPromptConfig } =
+          await import("@omniroute/open-sse/services/systemPrompt.ts");
+        setSystemPromptConfig(settings.systemPrompt);
+        console.log("[STARTUP] Global System Prompt restored from settings");
+      }
+      // Restore Thinking-Budget config (#5312 RC-A)
+      const { hydrateThinkingBudgetConfig } =
+        await import("@omniroute/open-sse/services/thinkingBudget.ts");
+      if (hydrateThinkingBudgetConfig(settings)) {
+        console.log("[STARTUP] Thinking-Budget config restored from settings");
+      }
+      // Restore Task-Aware Smart Routing config (#8601)
+      const { hydrateTaskRoutingConfig } =
+        await import("@omniroute/open-sse/services/taskAwareRouter.ts");
+      if (hydrateTaskRoutingConfig(settings)) {
+        console.log("[STARTUP] Task-Aware Routing config restored from settings");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[STARTUP] Could not restore runtime settings:", msg);
+    }
+  }
+
+  // ── Full-mode modules (skipped in lean) ────────────────────────────────
+  if (!lean) {
+    const [
+      { initApiBridgeServer },
+      { startBackgroundRefresh },
+      { ensureCloudSyncInitialized },
+      { startProviderLimitsSyncScheduler },
+      { startRuntimeConfigHotReload },
+      { startSpendBatchWriter },
+      { startCleanupScheduler },
+      { registerDefaultGuardrails },
+      { ensurePersistentManagementPasswordHash },
+      { skillExecutor },
+      { registerBuiltinSkills },
+    ] = await Promise.all([
+      import("@/lib/apiBridgeServer"),
+      import("@/domain/quotaCache"),
+      import("@/lib/initCloudSync"),
+      import("@/shared/services/providerLimitsSyncScheduler"),
+      import("@/lib/config/hotReload"),
+      import("@/lib/spend/batchWriter"),
+      import("@/lib/db/cleanup"),
+      import("@/lib/guardrails"),
+      import("@/lib/auth/managementPassword"),
+      import("@/lib/skills/executor"),
+      import("@/lib/skills/builtins"),
+    ]);
+
+    // Proxy health scheduler (auto-removes dead proxies on interval)
+    await import("@/lib/proxyHealth/scheduler");
+
+    // Free-proxy auto-sync scheduler (re-fetches free-proxy sources on interval, #7079)
+    await import("@/lib/freeProxyProviders/scheduler");
+
+    initApiBridgeServer();
+    startSpendBatchWriter();
+    registerDefaultGuardrails();
+    registerBuiltinSkills(skillExecutor);
+    console.log("[STARTUP] Spend batch writer started");
+    console.log("[STARTUP] Guardrail registry initialized");
+    console.log("[STARTUP] Builtin skill handlers registered");
+    if (!isBackgroundServicesDisabled()) {
+      startBackgroundRefresh();
+      console.log("[STARTUP] Quota cache background refresh started");
+      startProviderLimitsSyncScheduler();
+      console.log("[STARTUP] Provider limits sync scheduler started");
+      const { startQuotaAutoPing } = await import("@/lib/services/quotaAutoPing");
+      startQuotaAutoPing();
+      console.log("[STARTUP] Quota auto-ping scheduler started (opt-in, no-op until enabled)");
+      const cloudSyncInitialized = await ensureCloudSyncInitialized();
+      console.log(
+        `[STARTUP] Cloud/model sync background bootstrap ${cloudSyncInitialized ? "initialized" : "skipped"}`
+      );
+      const { initBatchProcessor } = await import("@omniroute/open-sse/services/batchProcessor");
+      initBatchProcessor();
+      console.log("[STARTUP] Batch processor started");
     }
 
-    startRuntimeConfigHotReload();
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[STARTUP] Could not restore runtime settings:", msg);
-  }
+    try {
+      const [
+        { migrateCodexConnectionDefaultsFromLegacySettings },
+        { startSessionAccountAffinityCleanup },
+        { seedDefaultModelAliases },
+      ] = await Promise.all([
+        import("@/lib/providers/codexConnectionDefaults"),
+        import("@/lib/db/sessionAccountAffinity"),
+        import("@/lib/modelAliasSeed"),
+      ]);
+      let settings = await getSettings();
+      const passwordState = await ensurePersistentManagementPasswordHash({
+        logger: console,
+        settings,
+        source: "startup",
+      });
+      settings = passwordState.settings;
+      const runtimeChanges = await applyRuntimeSettings(settings, { force: true, source: "startup" });
+      if (runtimeChanges.length > 0) {
+        console.log(
+          `[STARTUP] Runtime settings hydrated: ${runtimeChanges
+            .map((entry) => entry.section)
+            .join(", ")}`
+        );
+      }
 
-  // Proactively start the credential-health sweep at boot so stale web-session
-  // connections (cookies that expired overnight) get re-probed and recovered on
-  // startup — instead of staying red until the first real request lazily imports
-  // the on-demand credentialGate. Idempotent; self-disables via
-  // OMNIROUTE_DISABLE_CREDENTIAL_HEALTH_CHECK and its cadence is tunable via
-  // CREDENTIAL_HEALTH_CHECK_INTERVAL. NOTE: this MUST live here (the real Next.js
-  // instrumentation startup), NOT in the unused src/server-init.ts.
-  try {
-    const { initCredentialHealthCheck } = await import("@/lib/credentialHealth/scheduler");
-    const started = initCredentialHealthCheck();
-    console.log(
-      started
-        ? "[STARTUP] Credential health scheduler started"
-        : "[STARTUP] Credential health scheduler disabled"
-    );
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[STARTUP] Could not start credential health scheduler:", msg);
-  }
+      // Restore Global System Prompt into in-memory config (#2468/#2470)
+      if (settings.systemPrompt) {
+        const { setSystemPromptConfig } =
+          await import("@omniroute/open-sse/services/systemPrompt.ts");
+        setSystemPromptConfig(settings.systemPrompt);
+        console.log("[STARTUP] Global System Prompt restored from settings");
+      }
 
-  try {
-    const { initAuditLog, cleanupExpiredLogs } = await import("@/lib/compliance/index");
-    initAuditLog();
-    console.log("[COMPLIANCE] Audit log table initialized");
+      // Restore the proxy-level Thinking-Budget config (#5312 RC-A). It lives in
+      // `settings.thinkingBudget` and is NOT covered by applyRuntimeSettings, so
+      // without this the dashboard mode (auto/custom/adaptive) silently reverts to
+      // the passthrough default on every restart. Previously this was only wired into
+      // the unused `server-init.ts`, so it never ran in production.
+      const { hydrateThinkingBudgetConfig } =
+        await import("@omniroute/open-sse/services/thinkingBudget.ts");
+      if (hydrateThinkingBudgetConfig(settings)) {
+        console.log("[STARTUP] Thinking-Budget config restored from settings");
+      }
 
-    const cleanup = await cleanupExpiredLogs();
-    if (
-      cleanup.deletedUsage ||
-      cleanup.deletedCallLogs ||
-      cleanup.deletedProxyLogs ||
-      cleanup.deletedRequestDetailLogs ||
-      cleanup.deletedAuditLogs ||
-      cleanup.deletedMcpAuditLogs
-    ) {
-      console.log("[COMPLIANCE] Expired log cleanup:", cleanup);
+      // Restore the Task-Aware Smart Routing config (#8601). It lives in
+      // `settings.taskRouting` (written as a JSON string by PUT /api/settings/task-routing)
+      // and is NOT covered by applyRuntimeSettings, so without this the feature silently
+      // reverts to disabled + the default model map on every restart. Same shape as the
+      // Thinking-Budget restore above; must live here, not in the unused server-init.ts.
+      const { hydrateTaskRoutingConfig } =
+        await import("@omniroute/open-sse/services/taskAwareRouter.ts");
+      if (hydrateTaskRoutingConfig(settings)) {
+        console.log("[STARTUP] Task-Aware Routing config restored from settings");
+      }
+
+      const seededModelAliases = await seedDefaultModelAliases();
+      console.log(
+        `[STARTUP] Model alias seed: applied=${seededModelAliases.applied.length}, skipped=${seededModelAliases.skipped.length}, removed=${seededModelAliases.removed.length}, failed=${seededModelAliases.failed.length}`
+      );
+      startSessionAccountAffinityCleanup();
+
+      const migration = await migrateCodexConnectionDefaultsFromLegacySettings();
+      if (migration.migrated) {
+        console.log(
+          `[STARTUP] Migrated Codex connection defaults for ${migration.updatedConnectionIds.length} connection(s)`
+        );
+        if (settings.cloudEnabled === true) {
+          const [{ syncToCloud }, { getConsistentMachineId }] = await Promise.all([
+            import("@/lib/cloudSync"),
+            import("@/shared/utils/machineId"),
+          ]);
+          const machineId = await getConsistentMachineId();
+          await syncToCloud(machineId);
+          console.log("[STARTUP] Synced migrated Codex connection defaults to cloud");
+        }
+      }
+
+      startRuntimeConfigHotReload();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[STARTUP] Could not restore runtime settings:", msg);
     }
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[COMPLIANCE] Could not initialize audit log:", msg);
-  }
 
-  // Storage-configured scheduled VACUUM (#4437): registers the timer from
-  // Settings > System & Storage and persists lastVacuumAt for the UI.
-  try {
-    const { initVacuumScheduler } = await import("@/lib/db/vacuumScheduler");
-    initVacuumScheduler();
-    console.log("[STARTUP] Scheduled VACUUM initialized (#4437)");
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[STARTUP] Could not initialize vacuum scheduler (non-fatal):", msg);
-  }
+    // Proactively start the credential-health sweep at boot
+    try {
+      const { initCredentialHealthCheck } = await import("@/lib/credentialHealth/scheduler");
+      const started = initCredentialHealthCheck();
+      console.log(
+        started
+          ? "[STARTUP] Credential health scheduler started"
+          : "[STARTUP] Credential health scheduler disabled"
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[STARTUP] Could not start credential health scheduler:", msg);
+    }
 
-  // Retention cleanup scheduler (#4691/#6988, #9624): runs the general retention
-  // cleanup once after startup and then every 6 hours. Previously this was only
-  // wired into the unused src/server-init.ts, so telemetry tables grew unboundedly
-  // even with retention.autoCleanupEnabled=true. Idempotent (guarded internally).
-  try {
-    startCleanupScheduler();
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[STARTUP] Could not start cleanup scheduler (non-fatal):", msg);
-  }
+    try {
+      const { initAuditLog, cleanupExpiredLogs } = await import("@/lib/compliance/index");
+      initAuditLog();
+      console.log("[COMPLIANCE] Audit log table initialized");
 
-  // Warm the model catalog's durable, apiKey-independent sub-caches at
-  // startup — see warmModelCatalogCache() for why the top-level Response
-  // cache alone doesn't deliver this. Fire-and-forget, non-fatal.
-  void warmModelCatalogCache();
+      const cleanup = await cleanupExpiredLogs();
+      if (
+        cleanup.deletedUsage ||
+        cleanup.deletedCallLogs ||
+        cleanup.deletedProxyLogs ||
+        cleanup.deletedRequestDetailLogs ||
+        cleanup.deletedAuditLogs ||
+        cleanup.deletedMcpAuditLogs
+      ) {
+        console.log("[COMPLIANCE] Expired log cleanup:", cleanup);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[COMPLIANCE] Could not initialize audit log:", msg);
+    }
+
+    // Storage-configured scheduled VACUUM (#4437)
+    try {
+      const { initVacuumScheduler } = await import("@/lib/db/vacuumScheduler");
+      initVacuumScheduler();
+      console.log("[STARTUP] Scheduled VACUUM initialized (#4437)");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[STARTUP] Could not initialize vacuum scheduler (non-fatal):", msg);
+    }
+
+    // Retention cleanup scheduler (#4691/#6988, #9624)
+    try {
+      startCleanupScheduler();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[STARTUP] Could not start cleanup scheduler (non-fatal):", msg);
+    }
+
+    // Warm the model catalog's durable, apiKey-independent sub-caches at
+    // startup — see warmModelCatalogCache() for why the top-level Response
+    // cache alone doesn't deliver this. Fire-and-forget, non-fatal.
+    void warmModelCatalogCache();
+  } // end !lean
 
   if (!isBackgroundServicesDisabled()) {
     // All services are independent — run in parallel for faster cold start.
