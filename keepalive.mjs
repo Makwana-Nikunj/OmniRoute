@@ -33,8 +33,46 @@ async function sendPing() {
   }
 }
 
-// Initial delay: wait 60s for OmniRoute to start up before the first ping
-setTimeout(() => {
-  sendPing();
+async function prewarm() {
+  console.log("[keepalive] Running initial prewarm sequence...");
+  await sendPing();
+
+  try {
+    const modelsUrl = new URL("/v1/models", targetBaseUrl).href;
+    const res = await fetch(modelsUrl, {
+      method: "GET",
+      headers: { "User-Agent": "OmniRoute-Warmup/1.0" },
+      signal: AbortSignal.timeout(30000),
+    });
+    console.log(`[keepalive] Prewarmed /v1/models (status: ${res.status})`);
+  } catch (e) {
+    console.warn(`[keepalive] /v1/models prewarm failed: ${e.message}`);
+  }
+
+  try {
+    const chatUrl = new URL("/v1/chat/completions", targetBaseUrl).href;
+    const res = await fetch(chatUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "OmniRoute-Warmup/1.0",
+      },
+      body: JSON.stringify({
+        model: "warmup-probe",
+        messages: [{ role: "user", content: "ping" }],
+      }),
+      signal: AbortSignal.timeout(45000),
+    });
+    console.log(`[keepalive] Prewarmed /v1/chat/completions (status: ${res.status})`);
+  } catch (e) {
+    console.warn(`[keepalive] /v1/chat/completions prewarm failed: ${e.message}`);
+  }
+  console.log("[keepalive] Prewarm sequence complete.");
+}
+
+// Initial delay: wait 45s for OmniRoute to start up before running prewarm
+setTimeout(async () => {
+  await prewarm();
   setInterval(sendPing, INTERVAL_MS);
-}, 60 * 1000);
+}, 45 * 1000);
+

@@ -25,7 +25,7 @@ export OMNIROUTE_LEAN_STARTUP="true"
 # Disable heavy background sync tasks and subsystems that waste CPU and memory on Render Free
 export ARENA_ELO_SYNC_ENABLED="false"
 export PRICING_SYNC_ENABLED="false"
-export MODELS_DEV_SYNC_ENABLED="0"
+export MODELS_DEV_SYNC_ENABLED="false"
 export FREE_PROXY_AUTO_SYNC_ENABLED="false"
 export OMNIROUTE_DISABLE_BACKGROUND_SERVICES="true"
 export OMNIROUTE_DISABLE_CREDENTIAL_HEALTH_CHECK="true"
