@@ -242,7 +242,14 @@ const nextConfig = {
     // Reduce peak heap during production builds (Next.js 15+).
     webpackMemoryOptimizations: true,
     // Run webpack in a separate Node worker, lowering main-process memory.
-    webpackBuildWorker: true,
+    // On memory-constrained builders (e.g. Render Free <= 8GB), running parent + worker
+    // doubles memory usage (peaking at 11.1 GB in DOCKER_GUIDE.md). Set to false when
+    // OMNIROUTE_USE_TURBOPACK=0 or explicitly disabled via env.
+    webpackBuildWorker:
+      process.env.OMNIROUTE_DISABLE_WEBPACK_WORKER === "1" ||
+      process.env.OMNIROUTE_USE_TURBOPACK === "0"
+        ? false
+        : true,
     // Next.js proxy (middleware) has a default 10MB body clone limit. File
     // uploads (OpenAI-compatible /v1/files) routinely exceed this. Match the
     // 512 MB server-side cap; tune via env if needed.
