@@ -11,8 +11,8 @@ set -eu
 DATA_DIR="${DATA_DIR:-/app/data}"
 DB_PATH="${DATA_DIR}/storage.sqlite"
 
-# Bound V8 heap to 350MB so container never exceeds Render's 512MB RAM limit
-export OMNIROUTE_MEMORY_MB="${OMNIROUTE_MEMORY_MB:-350}"
+# Bound V8 heap to 280MB so container has ample headroom below Render's 512MB limit
+export OMNIROUTE_MEMORY_MB="${OMNIROUTE_MEMORY_MB:-280}"
 export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=${OMNIROUTE_MEMORY_MB}"
 
 # Disable heavy background sync tasks and subsystems that waste CPU and memory on Render Free
