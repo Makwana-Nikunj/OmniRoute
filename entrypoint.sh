@@ -15,6 +15,12 @@ DB_PATH="${DATA_DIR}/storage.sqlite"
 export OMNIROUTE_MEMORY_MB="${OMNIROUTE_MEMORY_MB:-350}"
 export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=${OMNIROUTE_MEMORY_MB}"
 
+# Disable heavy background sync tasks that waste CPU and memory on Render Free
+export ARENA_ELO_SYNC_ENABLED="${ARENA_ELO_SYNC_ENABLED:-false}"
+export PRICING_SYNC_ENABLED="${PRICING_SYNC_ENABLED:-false}"
+export MODELS_DEV_SYNC_ENABLED="${MODELS_DEV_SYNC_ENABLED:-0}"
+export FREE_PROXY_AUTO_SYNC_ENABLED="${FREE_PROXY_AUTO_SYNC_ENABLED:-false}"
+
 echo "[entrypoint] DATA_DIR=${DATA_DIR}"
 echo "[entrypoint] Database=${DB_PATH}"
 echo "[entrypoint] OMNIROUTE_MEMORY_MB=${OMNIROUTE_MEMORY_MB}"

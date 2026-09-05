@@ -379,10 +379,10 @@ USER node
 # ── Render / default-build target ───────────────────────────────────────────
 # On Render Free tier (8 GB memory limit during builds), compiling the 350+
 # provider monorepo Next.js bundle from source exceeds the cgroup memory ceiling.
-# We base the default Render target on the official pre-built image, which has
-# Next.js standalone and Playwright/Chromium already precompiled.
+# We base the default Render target on the official slim pre-built image (no Chromium),
+# which has Next.js standalone already precompiled and uses much less RAM and disk.
 # We then install Litestream and mount the replication entrypoint.
-FROM diegosouzapw/omniroute:latest-web AS render
+FROM diegosouzapw/omniroute:latest AS render
 
 USER root
 
