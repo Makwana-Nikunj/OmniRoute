@@ -125,7 +125,7 @@ RUN --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-npm-cache,targe
 # at build time. Turbopack compiles in native Rust memory that lives outside the
 # V8 heap, so OMNIROUTE_BUILD_MEMORY_MB cannot bound it and a memory-constrained
 # build host gets SIGKILLed by the cgroup OOM killer with no error message.
-ARG OMNIROUTE_USE_TURBOPACK=1
+ARG OMNIROUTE_USE_TURBOPACK=0
 ENV OMNIROUTE_USE_TURBOPACK="${OMNIROUTE_USE_TURBOPACK}"
 
 # Next.js basePath is fixed at build time; pass OMNIROUTE_BASE_PATH here when the
@@ -287,6 +287,24 @@ FROM runner-base AS runner-web
 
 USER root
 
+# Litestream: streams SQLite writes to S3-compatible storage (e.g. Cloudflare
+# R2) so DATA_DIR survives a container restart on hosts with no persistent
+# disk (Render free tier). Version/filename verified against the real
+# published release asset -- litestream's actual filename has NO "v" prefix
+# and uses "x86_64", not "amd64" (e.g. litestream-0.5.17-linux-x86_64.tar.gz).
+ARG LITESTREAM_VERSION=0.5.17
+RUN --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-apt-cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-apt-lists,target=/var/lib/apt/lists,sharing=locked \
+  apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && curl -fsSL -o /tmp/litestream.tar.gz \
+    "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-x86_64.tar.gz" \
+  && tar -xzf /tmp/litestream.tar.gz -C /usr/local/bin litestream \
+  && chmod +x /usr/local/bin/litestream \
+  && rm -f /tmp/litestream.tar.gz \
+  && apt-get purge -y curl \
+  && rm -rf /var/lib/apt/lists/*
+
 # Copy playwright and playwright-core from the builder stage.
 # The slim runtime image does not have playwright in node_modules, so npx falls
 # back to a registry download — unreliable on CI runners (exits 127 on failure).
@@ -308,7 +326,18 @@ RUN --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-apt-cache,targe
   && chown -R node:node /home/node/.cache \
   && rm -rf /var/lib/apt/lists/*
 
+# NOTE: runner-base's ENTRYPOINT (/app/check-permissions.sh) is intentionally
+# NOT overridden here. It already validates DATA_DIR permissions and applies
+# OMNIROUTE_MEMORY_MB, then does `exec "$@"` -- so it transparently wraps
+# whatever we put in CMD below. Do not add a second ENTRYPOINT line; that
+# would silently drop those checks.
+COPY --chmod=644 litestream.yml /etc/litestream.yml
+COPY --chmod=755 entrypoint.sh /app/entrypoint.sh
+RUN chown node:node /etc/litestream.yml /app/entrypoint.sh
+
 USER node
+
+CMD ["/app/entrypoint.sh"]
 
 FROM runner-base AS runner-cli
 
@@ -346,3 +375,12 @@ RUN --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-npm-cache,targe
     openclaw@2026.9.1
 
 USER node
+
+# ── Render / default-build target ───────────────────────────────────────────
+# Docker builds the LAST stage in the file when no --target is given.
+# Without this, that would be runner-cli (Docker-in-Docker + full CLI
+# toolchain) -- wrong image for a hosted web gateway. This stage is just
+# runner-web re-tagged as the default, so a plain `docker build .` (which is
+# what Render's dashboard does -- it has no UI field for --target) produces
+# the correct lightweight image.
+FROM runner-web AS render
