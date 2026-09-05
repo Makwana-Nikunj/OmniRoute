@@ -377,10 +377,30 @@ RUN --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-npm-cache,targe
 USER node
 
 # ── Render / default-build target ───────────────────────────────────────────
-# Docker builds the LAST stage in the file when no --target is given.
-# Without this, that would be runner-cli (Docker-in-Docker + full CLI
-# toolchain) -- wrong image for a hosted web gateway. This stage is just
-# runner-web re-tagged as the default, so a plain `docker build .` (which is
-# what Render's dashboard does -- it has no UI field for --target) produces
-# the correct lightweight image.
-FROM runner-web AS render
+# On Render Free tier (8 GB memory limit during builds), compiling the 350+
+# provider monorepo Next.js bundle from source exceeds the cgroup memory ceiling.
+# We base the default Render target on the official pre-built image, which has
+# Next.js standalone and Playwright/Chromium already precompiled.
+# We then install Litestream and mount the replication entrypoint.
+FROM diegosouzapw/omniroute:latest-web AS render
+
+USER root
+
+ARG LITESTREAM_VERSION=0.5.17
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl ca-certificates \
+  && curl -fsSL -o /tmp/litestream.tar.gz \
+    "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-x86_64.tar.gz" \
+  && tar -xzf /tmp/litestream.tar.gz -C /usr/local/bin litestream \
+  && chmod +x /usr/local/bin/litestream \
+  && rm -f /tmp/litestream.tar.gz \
+  && apt-get purge -y curl \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --chmod=644 litestream.yml /etc/litestream.yml
+COPY --chmod=755 entrypoint.sh /app/entrypoint.sh
+RUN chown node:node /etc/litestream.yml /app/entrypoint.sh
+
+USER node
+
+CMD ["/app/entrypoint.sh"]
