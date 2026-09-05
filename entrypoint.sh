@@ -11,8 +11,13 @@ set -eu
 DATA_DIR="${DATA_DIR:-/app/data}"
 DB_PATH="${DATA_DIR}/storage.sqlite"
 
+# Bound V8 heap to 350MB so container never exceeds Render's 512MB RAM limit
+export OMNIROUTE_MEMORY_MB="${OMNIROUTE_MEMORY_MB:-350}"
+export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=${OMNIROUTE_MEMORY_MB}"
+
 echo "[entrypoint] DATA_DIR=${DATA_DIR}"
 echo "[entrypoint] Database=${DB_PATH}"
+echo "[entrypoint] OMNIROUTE_MEMORY_MB=${OMNIROUTE_MEMORY_MB}"
 
 mkdir -p "${DATA_DIR}"
 
