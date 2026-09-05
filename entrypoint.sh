@@ -11,9 +11,11 @@ set -eu
 DATA_DIR="${DATA_DIR:-/app/data}"
 DB_PATH="${DATA_DIR}/storage.sqlite"
 
-# Bound V8 heap to 350MB — 280 caused OOM at 275MB during startup.
-# Container RSS limit is 512MB; Node overhead + SQLite + Litestream ~100MB → 350MB safe.
-export OMNIROUTE_MEMORY_MB="${OMNIROUTE_MEMORY_MB:-350}"
+# Bound V8 heap to 360MB — 280 caused OOM at 275MB in V8 mark-compact.
+# Ensure memory is at least 360MB even if dashboard env was set to 280.
+if [ -z "${OMNIROUTE_MEMORY_MB:-}" ] || [ "${OMNIROUTE_MEMORY_MB}" -lt 350 ] 2>/dev/null; then
+  export OMNIROUTE_MEMORY_MB=360
+fi
 export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=${OMNIROUTE_MEMORY_MB}"
 
 # Lean startup: skip non-essential boot modules (skills, compliance, cloud sync, spend
@@ -32,6 +34,8 @@ export OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK="true"
 export OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK="true"
 export OMNIROUTE_DISABLE_CONNECTION_RECOVERY="true"
 export OMNIROUTE_A2A_MEMORY_HITS="0"
+export OMNIROUTE_ENABLE_LIVE_WS="false"
+export OMNIROUTE_WARMUP_ENABLED="false"
 
 echo "[entrypoint] DATA_DIR=${DATA_DIR}"
 echo "[entrypoint] Database=${DB_PATH}"
