@@ -399,7 +399,8 @@ RUN apt-get update \
 
 COPY --chmod=644 litestream.yml /etc/litestream.yml
 COPY --chmod=755 entrypoint.sh /app/entrypoint.sh
-RUN chown node:node /etc/litestream.yml /app/entrypoint.sh
+COPY --chmod=755 keepalive.mjs /app/keepalive.mjs
+RUN chown node:node /etc/litestream.yml /app/entrypoint.sh /app/keepalive.mjs
 
 USER node
 

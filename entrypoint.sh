@@ -16,6 +16,12 @@ echo "[entrypoint] Database=${DB_PATH}"
 
 mkdir -p "${DATA_DIR}"
 
+# Start keep-alive daemon if present to prevent Render free tier sleeping after 14 mins
+if [ -f /app/keepalive.mjs ]; then
+  echo "[entrypoint] Starting keep-alive daemon..."
+  node /app/keepalive.mjs &
+fi
+
 if [ -z "${LITESTREAM_BUCKET:-}" ] || [ -z "${LITESTREAM_ACCESS_KEY_ID:-}" ]; then
   echo "[entrypoint] LITESTREAM_BUCKET / LITESTREAM_ACCESS_KEY_ID not set."
   echo "[entrypoint] Skipping Litestream -- running OmniRoute WITHOUT replication."
