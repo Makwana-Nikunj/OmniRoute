@@ -1,0 +1,12 @@
+# Verified against benbjohnson/litestream v0.5.17 docs/PROVIDER_COMPATIBILITY.md
+# (Backblaze B2 section). B2's S3-compatible API requires sign-payload=true and
+# force-path-style=true -- unlike R2/AWS, B2 rejects unsigned/virtual-hosted
+# requests without them. Do not remove these two flags.
+
+dbs:
+  - path: ${DATA_DIR}/storage.sqlite
+    replicas:
+      - url: s3://${LITESTREAM_BUCKET}/${LITESTREAM_PATH}?endpoint=${LITESTREAM_ENDPOINT}&sign-payload=true&force-path-style=true
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        sync-interval: 10s
