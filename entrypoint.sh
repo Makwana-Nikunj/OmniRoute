@@ -49,11 +49,9 @@ if [ -f /app/keepalive.mjs ]; then
   node /app/keepalive.mjs &
 fi
 
-if [ -z "${LITESTREAM_BUCKET:-}" ] || [ -z "${LITESTREAM_ACCESS_KEY_ID:-}" ]; then
-  echo "[entrypoint] LITESTREAM_BUCKET / LITESTREAM_ACCESS_KEY_ID not set."
-  echo "[entrypoint] Skipping Litestream -- running OmniRoute WITHOUT replication."
-  echo "[entrypoint] Data will NOT survive a Render restart. Set the Litestream"
-  echo "[entrypoint] env vars to enable persistence."
+if [ "${LITESTREAM_ENABLED:-true}" = "false" ] || [ -z "${LITESTREAM_BUCKET:-}" ] || [ -z "${LITESTREAM_ACCESS_KEY_ID:-}" ]; then
+  echo "[entrypoint] LITESTREAM disabled or env vars not set."
+  echo "[entrypoint] Running OmniRoute WITHOUT Litestream replication."
   exec node dev/run-standalone.mjs
 fi
 
