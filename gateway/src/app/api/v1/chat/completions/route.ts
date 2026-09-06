@@ -1,9 +1,12 @@
 // Path A gateway scaffold — the OpenAI-compatible /v1/chat/completions route.
 //
-// This route is intentionally minimal: it parses the request body, resolves the
-// model+provider via @omniroute/open-sse's getModelInfoCore, reads one provider
-// API key from the GATEWAY_API_KEY env var, and delegates the entire request
-// lifecycle to handleChatCore (the same core the upstream OmniRoute uses).
+// This route is intentionally minimal: it parses the request body, validates
+// the shape (T06 Zod gate), resolves the model+provider via
+// @omniroute/open-sse's getModelInfoCore, reads one provider API key from the
+// GATEWAY_API_KEY env var, and delegates the entire request lifecycle to
+// handleChatCore (the same core the upstream OmniRoute uses). Streaming
+// responses are wrapped with @omniroute/open-sse's early-stream keepalive
+// helper so reverse proxies don't time out on slow upstreams.
 //
 // Scope of this scaffold (deliberate):
 //   - One provider per process (env-var key).
@@ -12,17 +15,21 @@
 //   - No raw err.stack / err.message in the response body.
 //
 // Module-load boundary (CRITICAL — this is what makes the gate tests runnable):
-//   - We import the *narrow* surface (errorResponse, getModelInfoCore, logger)
-//     directly via deep paths, NOT the `import "@omniroute/open-sse"` barrel.
-//     The barrel re-exports 167 modules and pulls in the full chat lifecycle,
-//     which transitively imports @/lib/db/* (provider connections, combos, DB
-//     state, OAuth). Loading that here would force the gateway to vendor the
-//     entire parent DB layer (117 modules, 148 migrations) just to compile.
+//   - We import the *narrow* surface (errorResponse, getModelInfoCore, logger,
+//     acceptHeaderForcesStream, earlyStreamKeepalive) directly via deep paths,
+//     NOT the `import "@omniroute/open-sse"` barrel. The barrel re-exports 167
+//     modules and pulls in the full chat lifecycle, which transitively imports
+//     @/lib/db/* (provider connections, combos, DB state, OAuth). Loading
+//     that here would force the gateway to vendor the entire parent DB layer
+//     (117 modules, 148 migrations) just to compile.
+//   - The early-stream keepalive helpers are cheap (no @/lib/db/* import),
+//     so they can be imported eagerly — they only emit SSE comment frames
+//     and never touch the parent DB.
 //   - handleChatCore is loaded LAZILY, inside the POST handler, AFTER every
 //     gate has passed. The gate tests (415 / 500 / 400 invalid_json / 400
-//     missing_model / 400 unknown_model) therefore run without ever loading
-//     the engine — and the test suite stays offline-friendly (no live
-//     GATEWAY_API_KEY required, per Hard Rule #1).
+//     non_object / 400 missing_model / 400 unknown_model / T06) therefore
+//     run without ever loading the engine — and the test suite stays
+//     offline-friendly (no live GATEWAY_API_KEY required, per Hard Rule #1).
 //
 // Future work (intentionally NOT in this scaffold):
 //   - Lift the full chat lifecycle from src/sse/handlers/chat.ts when we need
@@ -30,9 +37,17 @@
 //   - For now, see `_tasks/superpowers/plans/2026-09-05-explore-omniroute-architecture.md`
 //     for the map of what lives in src/sse/ vs what lives in open-sse/.
 
+import { z } from "zod";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
 import { logger as openSseLogger } from "@omniroute/open-sse/utils/logger.ts";
 import { getModelInfoCore } from "@omniroute/open-sse/services/model.ts";
+import { acceptHeaderForcesStream } from "@omniroute/open-sse/utils/aiSdkCompat.ts";
+import {
+  OPENAI_CHAT_ERROR_FRAME,
+  OPENAI_KEEPALIVE_FRAME,
+  OPENAI_STARTUP_FRAME,
+  withEarlyStreamKeepalive,
+} from "@omniroute/open-sse/utils/earlyStreamKeepalive.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +58,34 @@ const CORS_HEADERS = {
 function readEnv(name: string): string | null {
   const v = process.env[name];
   return typeof v === "string" && v.length > 0 ? v : null;
+}
+
+// Minimal body-shape gate (T06). Mirrors the upstream route's pattern: the body
+// is already parsed exactly once in the POST handler before this schema runs, so
+// `.safeParse()` only re-validates the in-memory object — it does NOT re-read the
+// request body.
+//
+// Deliberately permissive: the deeper `handleChatCore` owns the real validation of
+// messages/model/temperature/top_p/max_tokens/n. This schema only asserts the
+// shape the route already assumes before model resolution:
+//   - body is a non-null object
+//   - `model`, when present, is a nullable string (handleChatCore can resolve a
+//     missing `model` later via the `input` field / antigravity routing)
+//   - `messages`, when present, is an array (any element shape is fine)
+//
+// `.passthrough()` keeps every other field (stream, tools, reasoning, provider-
+// specific extras, ...) intact for handleChatCore to consume. A failure here
+// means a shape the deeper validation would already have rejected with its own
+// 400 — this is a defensive layer, not a new gate.
+const chatBodyShape = z
+  .object({
+    model: z.string().nullable().optional(),
+    messages: z.array(z.unknown()).optional(),
+  })
+  .passthrough();
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export async function OPTIONS() {
@@ -110,6 +153,19 @@ export async function POST(request: Request) {
     });
   }
 
+  // T06 — body shape gate. The body is already parsed above; this just
+  // re-validates the in-memory object so a malformed body fails fast with a
+  // sanitized 400 instead of surfacing deep inside handleChatCore.
+  const shapeCheck = chatBodyShape.safeParse(bodyObj);
+  if (!shapeCheck.success) {
+    const issue = shapeCheck.error.issues[0];
+    const field = issue?.path?.length ? issue.path.join(".") : "body";
+    return errorResponse(400, `${field}: ${issue?.message ?? "Invalid request"}`, {
+      type: "invalid_request_error",
+      code: "invalid_request",
+    });
+  }
+
   // Resolve `provider/model/extendedContext` from the model string. We pass
   // `null` for aliases because the scaffold does not maintain a DB-backed
   // alias table; a future iteration can lift the upstream `getCombosCached`
@@ -153,55 +209,103 @@ export async function POST(request: Request) {
     providerSpecificData: null,
   };
 
+  // Gate 7 — streaming intent. The client controls framing via `body.stream`
+  // (the OpenAI contract); the Accept header can also force SSE for SDK
+  // callers that don't set `stream: true` explicitly (e.g. AI SDK / Vercel AI
+  // SDK). This decision runs BEFORE the upstream call so the keepalive wrapper
+  // can race the executor's first token.
+  const acceptHeader = request.headers.get("accept") || "";
+  const wantsStreaming =
+    (isRecord(bodyObj) && bodyObj.stream === true) ||
+    acceptHeaderForcesStream(acceptHeader, bodyObj?.stream);
+
   // Delegate the entire request lifecycle to open-sse. handleChatCore handles
   // protocol translation (OpenAI <-> Claude <-> Gemini wire formats), retries,
   // and returns a Response we can return directly to the client.
-  let result;
-  try {
-    result = await handleChatCore({
-      body: { ...bodyObj, model: `${resolved.provider}/${resolved.model}` },
-      modelInfo: {
-        provider: resolved.provider,
-        model: resolved.model,
-        extendedContext: resolved.extendedContext,
-      },
-      credentials,
-      log,
-      // We pass the original model string back so the executor preserves the
-      // caller's intent (e.g. user wrote "openai/gpt-4o" — keep the slash
-      // form for round-trip parity). The body above already includes the
-      // normalized form so the executor can match.
-      clientRawRequest: { headers: Object.fromEntries(request.headers.entries()) },
-      // No admission, no combo, no quota tracking in this scaffold.
-      isCombo: false,
-      skipUpstreamRetry: false,
-      // We want streaming when the client asks for it, otherwise JSON.
-      // handleChatCore honors body.stream directly.
+  const handleChatPromise = (async (): Promise<Response> => {
+    let result;
+    try {
+      result = await handleChatCore({
+        body: { ...bodyObj, model: `${resolved.provider}/${resolved.model}` },
+        modelInfo: {
+          provider: resolved.provider,
+          model: resolved.model,
+          extendedContext: resolved.extendedContext,
+        },
+        credentials,
+        log,
+        // Lifecycle callbacks (required by handleChatCore's inferred param
+        // type). The scaffold has no DB / no combo / no quota so all of these
+        // are no-op. When we lift the full chat lifecycle from
+        // src/sse/handlers/chat.ts, these get replaced with real implementations
+        // (clearAccountError on success, circuit-breaker write-through on
+        // failure, etc.).
+        onCredentialsRefreshed: () => {},
+        onRequestSuccess: () => {},
+        onStreamFailure: () => {},
+        onDisconnect: () => {},
+        userAgent: request.headers.get("user-agent") ?? undefined,
+        comboName: undefined,
+        // Top-level connectionId (separate from credentials.connectionId) is
+        // used by handleChatCore for usage tracking + settings lookup. The
+        // scaffold has no DB so it stays null — usage will not be persisted.
+        connectionId: null,
+        // We pass the original model string back so the executor preserves the
+        // caller's intent (e.g. user wrote "openai/gpt-4o" — keep the slash
+        // form for round-trip parity). The body above already includes the
+        // normalized form so the executor can match.
+        clientRawRequest: { headers: Object.fromEntries(request.headers.entries()) },
+        // No admission, no combo, no quota tracking in this scaffold.
+        isCombo: false,
+        skipUpstreamRetry: false,
+        // We want streaming when the client asks for it, otherwise JSON.
+        // handleChatCore honors body.stream directly.
+      });
+    } catch (err) {
+      // Hard Rule #12 — never put raw err.stack / err.message in the response.
+      return errorResponse(500, "Upstream call failed", {
+        type: "upstream_error",
+        code: "handle_chat_core_threw",
+      });
+    }
+
+    if (!result || result.success !== true || !result.response) {
+      return errorResponse(
+        typeof result?.status === "number" ? result.status : 502,
+        typeof result?.error === "string" ? result.error : "Upstream provider returned no response",
+        { type: "upstream_error", code: "no_response" }
+      );
+    }
+
+    // The result.response is a fully-formed Response with the right headers
+    // (SSE Content-Type for streaming, application/json for non-streaming).
+    // Re-emit CORS so browsers can call the route cross-origin.
+    const headers = new Headers(result.response.headers);
+    for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
+    return new Response(result.response.body, {
+      status: result.response.status,
+      statusText: result.response.statusText,
+      headers,
     });
-  } catch (err) {
-    // Hard Rule #12 — never put raw err.stack / err.message in the response.
-    return errorResponse(500, "Upstream call failed", {
-      type: "upstream_error",
-      code: "handle_chat_core_threw",
+  })();
+
+  // Gate 8 — SSE keepalive wrap. Only wrap when the client actually wants
+  // streaming — wrapping a non-streaming JSON response would convert a 200 OK
+  // application/json into text/event-stream and break SDK consumers that
+  // inspect Content-Type. The wrapper races a 2s threshold: if the executor
+  // hasn't produced the first token yet, the route opens an SSE stream now
+  // and emits a keepalive comment every 2.5s, so reverse proxies and clients
+  // don't time out the connection on a slow upstream.
+  if (wantsStreaming) {
+    return withEarlyStreamKeepalive(handleChatPromise, {
+      signal: request.signal,
+      thresholdMs: 2_000,
+      intervalMs: 2_500,
+      keepaliveFrame: OPENAI_KEEPALIVE_FRAME,
+      startupFrame: OPENAI_STARTUP_FRAME,
+      errorFrame: OPENAI_CHAT_ERROR_FRAME,
     });
   }
 
-  if (!result || result.success !== true || !result.response) {
-    return errorResponse(
-      typeof result?.status === "number" ? result.status : 502,
-      typeof result?.error === "string" ? result.error : "Upstream provider returned no response",
-      { type: "upstream_error", code: "no_response" }
-    );
-  }
-
-  // The result.response is a fully-formed Response with the right headers
-  // (SSE Content-Type for streaming, application/json for non-streaming).
-  // Re-emit CORS so browsers can call the route cross-origin.
-  const headers = new Headers(result.response.headers);
-  for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
-  return new Response(result.response.body, {
-    status: result.response.status,
-    statusText: result.response.statusText,
-    headers,
-  });
+  return handleChatPromise;
 }
