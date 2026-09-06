@@ -1,6 +1,10 @@
+/**
+ * Service API key helpers — stubs for lean gateway
+ *
+ * Embedded services are not available in lean gateway; this stub generates
+ * ephemeral keys without persistence.
+ */
 import { randomBytes } from "node:crypto";
-import { encrypt, decrypt } from "@/lib/db/encryption";
-import { getServiceRow, updateServiceField } from "@/lib/db/versionManager";
 
 export function generateServiceApiKey(prefix = "nr"): string {
   return `${prefix}_${randomBytes(32).toString("base64url")}`;
@@ -19,22 +23,10 @@ export class ServiceApiKeyDecryptError extends Error {
 }
 
 export async function getOrCreateApiKey(tool: string): Promise<string> {
-  const row = await getServiceRow(tool);
-  if (row?.apiKey) {
-    const decrypted = decrypt(row.apiKey);
-    if (decrypted) return decrypted;
-    // Fail loud: silently regenerating would mint a new key the embedded
-    // service has never been told, causing every request to 401 with no
-    // operator-facing signal.
-    throw new ServiceApiKeyDecryptError(tool);
-  }
-  // Dario reuses this mechanism to generate+persist its DARIO_ADMIN_TOKEN
-  // (any long random string works — it gates the /admin/* control plane).
-  const prefix =
-    tool === "9router" ? "nr" : tool === "mux" ? "mx" : tool === "dario" ? "da" : "cp";
-  const key = generateServiceApiKey(prefix);
-  await updateServiceField(tool, "apiKey", encrypt(key) ?? key);
-  return key;
+  // No persistence — return an ephemeral key; the embedded service path is
+  // not used in lean gateway.
+  const prefix = tool === "9router" ? "nr" : tool === "mux" ? "mx" : tool === "dario" ? "da" : "cp";
+  return generateServiceApiKey(prefix);
 }
 
 export function maskApiKey(plainKey: string): string {

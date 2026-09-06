@@ -1,3 +1,6 @@
+/**
+ * Webhook event types — stubs for lean gateway
+ */
 export type WebhookEvent = "request.completed" | "request.failed" | "quota.exceeded" | "test.ping";
 
 export const WEBHOOK_EVENT_VALUES = [
@@ -29,25 +32,25 @@ export const EVENT_DESCRIPTIONS: Record<WebhookEvent, EventDescription> = {
   },
   "request.failed": {
     label: "Request Failed",
-    emoji: "🚨",
-    description: "Triggered when a request fails after all retries and fallback combo targets.",
+    emoji: "❌",
+    description: "Triggered when an upstream request fails (HTTP 4xx/5xx).",
     exampleData: {
       model: "claude-opus-4-7",
       provider: "claude",
-      error: "503 Service Unavailable",
-      attempts: 3,
+      latencyMs: 340,
+      error: "upstream 503",
     },
   },
   "quota.exceeded": {
     label: "Quota Exceeded",
-    emoji: "📊",
-    description: "A usage threshold (e.g. 95% of quota) was reached.",
-    exampleData: { quota: "daily_tokens", used: 950000, limit: 1000000, pct: 95 },
+    emoji: "⚠️",
+    description: "Triggered when an API key exceeds its usage quota.",
+    exampleData: { apiKeyId: "key_xxx", quotaType: "monthly", limit: 100000, used: 100001 },
   },
   "test.ping": {
     label: "Test Ping",
-    emoji: "🏓",
-    description: "Manual test delivery to verify your webhook is reachable.",
-    exampleData: { message: "Test ping from OmniRoute", webhookId: "preview" },
+    emoji: "🔔",
+    description: "Triggered when a webhook is tested.",
+    exampleData: { test: true, timestamp: new Date().toISOString() },
   },
 };
