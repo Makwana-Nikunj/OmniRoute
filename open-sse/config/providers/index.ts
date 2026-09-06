@@ -10,8 +10,6 @@ import { syntheticProvider } from "./registry/synthetic/index.ts";
 import { ideogramProvider } from "./registry/ideogram/index.ts";
 import { friendliaiProvider } from "./registry/friendliai/index.ts";
 import { sunoProvider } from "./registry/suno/index.ts";
-import { adapta_webProvider } from "./registry/adapta-web/index.ts";
-import { notion_webProvider } from "./registry/notion-web/index.ts";
 import { anthropicProvider } from "./registry/anthropic/index.ts";
 import { sambanovaProvider } from "./registry/sambanova/index.ts";
 import { deepaiProvider } from "./registry/deepai/index.ts";
@@ -24,7 +22,6 @@ import { glmProvider } from "./registry/glm/index.ts";
 import { glmtProvider } from "./registry/glm/t/index.ts";
 import { glm_cnProvider } from "./registry/glm/cn/index.ts";
 import { traeProvider } from "./registry/trae/index.ts";
-import { muse_spark_webProvider } from "./registry/muse-spark-web/index.ts";
 import { lmarenaProvider } from "./registry/lmarena/index.ts";
 import { kilocodeProvider } from "./registry/kilocode/index.ts";
 import { githubProvider } from "./registry/github/index.ts";
@@ -33,7 +30,6 @@ import { difyProvider } from "./registry/dify/index.ts";
 import { ovhcloudProvider } from "./registry/ovhcloud/index.ts";
 import { claudeProvider } from "./registry/claude/index.ts";
 import { claude_webProvider } from "./registry/claude/web/index.ts";
-import { cloudflarePlaygroundProvider } from "./registry/cloudflare-playground/index.ts";
 import { bedrockProvider } from "./registry/bedrock/index.ts";
 import { inner_aiProvider } from "./registry/inner-ai/index.ts";
 import { qoderProvider } from "./registry/qoder/index.ts";
@@ -45,7 +41,6 @@ import { predibaseProvider } from "./registry/predibase/index.ts";
 import { baichuanProvider } from "./registry/baichuan/index.ts";
 import { yiProvider } from "./registry/yi/index.ts";
 import { deepseekProvider } from "./registry/deepseek/index.ts";
-import { deepseek_webProvider } from "./registry/deepseek/web/index.ts";
 import { dgridProvider } from "./registry/dgrid/index.ts";
 import { baiProvider } from "./registry/bai/index.ts";
 import { qiniuProvider } from "./registry/qiniu/index.ts";
@@ -103,8 +98,6 @@ import { modelscopeProvider } from "./registry/modelscope/index.ts";
 import { sensenovaProvider } from "./registry/sensenova/index.ts";
 import { hyperbolicProvider } from "./registry/hyperbolic/index.ts";
 import { lambda_aiProvider } from "./registry/lambda-ai/index.ts";
-import { t3_webProvider } from "./registry/t3-web/index.ts";
-import { conol_webProvider } from "./registry/conol-web/index.ts";
 import { iflytekProvider } from "./registry/iflytek/index.ts";
 import { crofProvider } from "./registry/crof/index.ts";
 import { moonshotProvider } from "./registry/moonshot/index.ts";
@@ -112,25 +105,18 @@ import { poeProvider } from "./registry/poe/index.ts";
 import { bazaarlinkProvider } from "./registry/bazaarlink/index.ts";
 import { perplexityProvider } from "./registry/perplexity/index.ts";
 import { perplexityAgentProvider } from "./registry/perplexity/agent/index.ts";
-import { perplexity_webProvider } from "./registry/perplexity/web/index.ts";
 import { minimaxProvider } from "./registry/minimax/index.ts";
 import { minimax_cnProvider } from "./registry/minimax/cn/index.ts";
 import { haiperProvider } from "./registry/haiper/index.ts";
 import { bytezProvider } from "./registry/bytez/index.ts";
 import { blackboxProvider } from "./registry/blackbox/index.ts";
-import { blackbox_webProvider } from "./registry/blackbox/web/index.ts";
 import { uncloseaiProvider } from "./registry/uncloseai/index.ts";
 import { nscaleProvider } from "./registry/nscale/index.ts";
-import { chatgpt_web_codexProvider } from "./registry/chatgpt-web-codex/index.ts";
-import { chatgpt_webProvider } from "./registry/chatgpt-web/index.ts";
 import { openrouterProvider } from "./registry/openrouter/index.ts";
-import { cheaperinferenceProvider } from "./registry/cheaperinference/index.ts";
 import { openvectaProvider } from "./registry/openvecta/index.ts";
 import { openferenceProvider } from "./registry/openference/index.ts";
 import { openference_apiProvider } from "./registry/openference-api/index.ts";
 import { orcarouterProvider } from "./registry/orcarouter/index.ts";
-import { copilot_webProvider } from "./registry/copilot-web/index.ts";
-import { copilot_m365_webProvider } from "./registry/copilot-m365-web/index.ts";
 import { stepfunProvider } from "./registry/stepfun/index.ts";
 import { freemodel_devProvider } from "./registry/freemodel-dev/index.ts";
 import { gitlawb_gmiProvider } from "./registry/gitlawb/gmi/index.ts";
@@ -146,7 +132,6 @@ import { udioProvider } from "./registry/udio/index.ts";
 import { longcatProvider } from "./registry/longcat/index.ts";
 import { vertex_partnerProvider } from "./registry/vertex/partner/index.ts";
 import { vertexProvider } from "./registry/vertex/index.ts";
-import { duckduckgo_webProvider } from "./registry/duckduckgo-web/index.ts";
 import { xaiProvider, xai_oauthProvider } from "./registry/xai/index.ts";
 import { morphProvider } from "./registry/morph/index.ts";
 import { siliconflowProvider } from "./registry/siliconflow/index.ts";
@@ -154,7 +139,6 @@ import { gitlab_duoProvider } from "./registry/gitlab-duo/index.ts";
 import { command_codeProvider } from "./registry/command-code/index.ts";
 import { novitaProvider } from "./registry/novita/index.ts";
 import { regoloProvider } from "./registry/regolo/index.ts";
-import { devin_desktopProvider } from "./registry/devin-desktop/index.ts";
 import { zcodeProvider } from "./registry/zcode/index.ts";
 import { zed_hostedProvider } from "./registry/zed-hosted/index.ts";
 import { nanogptProvider } from "./registry/nanogpt/index.ts";
@@ -167,18 +151,12 @@ import { yuanbao_webProvider } from "./registry/yuanbao-web/index.ts";
 import { galadrielProvider } from "./registry/galadriel/index.ts";
 import { qianfanProvider } from "./registry/qianfan/index.ts";
 import { meta_llamaProvider } from "./registry/meta-llama/index.ts";
-import { cloudflare_aiProvider } from "./registry/cloudflare-ai/index.ts";
 import { nous_researchProvider } from "./registry/nous-research/index.ts";
 import { alibabaProvider } from "./registry/alibaba/index.ts";
 import { alibaba_cnProvider } from "./registry/alibaba/cn/index.ts";
 import { doubaoProvider } from "./registry/doubao/index.ts";
-import { doubao_webProvider } from "./registry/doubao/web/index.ts";
 import { kilo_gatewayProvider } from "./registry/kilo-gateway/index.ts";
 import { bailian_coding_planProvider } from "./registry/bailian-coding-plan/index.ts";
-import { gigachatProvider } from "./registry/gigachat/index.ts";
-import { devin_cliProvider } from "./registry/devin-cli/index.ts";
-import { devin_cli_agenticProvider } from "./registry/devin-cli-agentic/index.ts";
-import { auggieProvider } from "./registry/auggie/index.ts";
 import { chutesProvider } from "./registry/chutes/index.ts";
 import { chenzkProvider } from "./registry/chenzk/index.ts";
 import { factoryProvider } from "./registry/factory/index.ts";
@@ -189,7 +167,6 @@ import { inceptionProvider } from "./registry/inception/index.ts";
 import { sarvamProvider } from "./registry/sarvam/index.ts";
 import { writerProvider } from "./registry/writer/index.ts";
 import { plamoProvider } from "./registry/plamo/index.ts";
-import { clova_studioProvider } from "./registry/clova-studio/index.ts";
 import { internlmProvider } from "./registry/internlm/index.ts";
 import { ant_lingProvider } from "./registry/ant-ling/index.ts";
 import { vercel_ai_gatewayProvider } from "./registry/vercel-ai-gateway/index.ts";
@@ -221,7 +198,6 @@ import { ditProvider } from "./registry/dit/index.ts";
 import { tokenrouterProvider } from "./registry/tokenrouter/index.ts";
 import { token_kioskProvider } from "./registry/token-kiosk/index.ts";
 import { grok_cliProvider } from "./registry/grok-cli/index.ts";
-import { codebuddy_cnProvider } from "./registry/codebuddy-cn/index.ts";
 import { pioneerProvider } from "./registry/pioneer/index.ts";
 import { zenmux_freeProvider } from "./registry/zenmux-free/index.ts";
 import { tinycmsProvider } from "./registry/tinycms/index.ts";
@@ -281,8 +257,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   ideogram: ideogramProvider,
   friendliai: friendliaiProvider,
   suno: sunoProvider,
-  "adapta-web": adapta_webProvider,
-  "notion-web": notion_webProvider,
   anthropic: anthropicProvider,
   sambanova: sambanovaProvider,
   upstage: upstageProvider,
@@ -295,7 +269,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   glmt: glmtProvider,
   "glm-cn": glm_cnProvider,
   trae: traeProvider,
-  "muse-spark-web": muse_spark_webProvider,
   lmarena: lmarenaProvider,
   kilocode: kilocodeProvider,
   github: githubProvider,
@@ -304,7 +277,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   ovhcloud: ovhcloudProvider,
   claude: claudeProvider,
   "claude-web": claude_webProvider,
-  "cloudflare-playground": cloudflarePlaygroundProvider,
   bedrock: bedrockProvider,
   "inner-ai": inner_aiProvider,
   qoder: qoderProvider,
@@ -316,7 +288,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   baichuan: baichuanProvider,
   yi: yiProvider,
   deepseek: deepseekProvider,
-  "deepseek-web": deepseek_webProvider,
   dgrid: dgridProvider,
   bai: baiProvider,
   qiniu: qiniuProvider,
@@ -374,8 +345,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   sensenova: sensenovaProvider,
   hyperbolic: hyperbolicProvider,
   "lambda-ai": lambda_aiProvider,
-  "t3-web": t3_webProvider,
-  "conol-web": conol_webProvider,
   iflytek: iflytekProvider,
   crof: crofProvider,
   moonshot: moonshotProvider,
@@ -383,25 +352,18 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   bazaarlink: bazaarlinkProvider,
   perplexity: perplexityProvider,
   "perplexity-agent": perplexityAgentProvider,
-  "perplexity-web": perplexity_webProvider,
   minimax: minimaxProvider,
   "minimax-cn": minimax_cnProvider,
   haiper: haiperProvider,
   bytez: bytezProvider,
   blackbox: blackboxProvider,
-  "blackbox-web": blackbox_webProvider,
   uncloseai: uncloseaiProvider,
   nscale: nscaleProvider,
-  "chatgpt-web-codex": chatgpt_web_codexProvider,
-  "chatgpt-web": chatgpt_webProvider,
   openrouter: openrouterProvider,
-  cheaperinference: cheaperinferenceProvider,
   openvecta: openvectaProvider,
   openference: openferenceProvider,
   "openference-api": openference_apiProvider,
   orcarouter: orcarouterProvider,
-  "copilot-web": copilot_webProvider,
-  "copilot-m365-web": copilot_m365_webProvider,
   stepfun: stepfunProvider,
   "freemodel-dev": freemodel_devProvider,
   "gitlawb-gmi": gitlawb_gmiProvider,
@@ -417,7 +379,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   longcat: longcatProvider,
   "vertex-partner": vertex_partnerProvider,
   vertex: vertexProvider,
-  "duckduckgo-web": duckduckgo_webProvider,
   xai: xaiProvider,
   "xai-oauth": xai_oauthProvider,
   morph: morphProvider,
@@ -426,7 +387,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   "command-code": command_codeProvider,
   novita: novitaProvider,
   regolo: regoloProvider,
-  "devin-desktop": devin_desktopProvider,
   zcode: zcodeProvider,
   "zed-hosted": zed_hostedProvider,
   nanogpt: nanogptProvider,
@@ -439,18 +399,12 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   galadriel: galadrielProvider,
   qianfan: qianfanProvider,
   "meta-llama": meta_llamaProvider,
-  "cloudflare-ai": cloudflare_aiProvider,
   "nous-research": nous_researchProvider,
   alibaba: alibabaProvider,
   "alibaba-cn": alibaba_cnProvider,
   doubao: doubaoProvider,
-  "doubao-web": doubao_webProvider,
   "kilo-gateway": kilo_gatewayProvider,
   "bailian-coding-plan": bailian_coding_planProvider,
-  gigachat: gigachatProvider,
-  "devin-cli": devin_cliProvider,
-  "devin-cli-agentic": devin_cli_agenticProvider,
-  auggie: auggieProvider,
   chutes: chutesProvider,
   chenzk: chenzkProvider,
   factory: factoryProvider,
@@ -461,7 +415,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   sarvam: sarvamProvider,
   writer: writerProvider,
   plamo: plamoProvider,
-  "clova-studio": clova_studioProvider,
   internlm: internlmProvider,
   "ant-ling": ant_lingProvider,
   "vercel-ai-gateway": vercel_ai_gatewayProvider,
@@ -495,7 +448,6 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   tokenrouter: tokenrouterProvider,
   "token-kiosk": token_kioskProvider,
   "grok-cli": grok_cliProvider,
-  "codebuddy-cn": codebuddy_cnProvider,
   pioneer: pioneerProvider,
   "zenmux-free": zenmux_freeProvider,
   "tinycms-web": tinycmsProvider,

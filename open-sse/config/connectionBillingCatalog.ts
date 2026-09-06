@@ -121,23 +121,4 @@ export const CONNECTION_BILLING_CATALOG: readonly ConnectionBillingEntry[] = [
       "can be enabled per account and OmniRoute cannot observe that setting. Recorded " +
       "as unknown overage so the strict grouping excludes it.",
   },
-  {
-    provider: "copilot-web",
-    authType: "apikey",
-    billing: "subscription",
-    overage: "unknown",
-    reason:
-      "GitHub Copilot is a per-seat subscription (the credential is a seat token, not a " +
-      "metered API key), but additional premium requests can be billed when the account " +
-      "opts in. Recorded as unknown overage.",
-  },
-  {
-    provider: "devin-desktop",
-    authType: "oauth",
-    billing: "subscription",
-    overage: "meters-to-paid",
-    reason:
-      "Devin Desktop draws on the plan's included ACUs and continues billing past them, " +
-      "so it is plan-included while quota remains but never overage-safe.",
-  },
 ];

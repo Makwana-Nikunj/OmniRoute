@@ -305,18 +305,6 @@ export const EMBEDDING_PROVIDERS: Record<string, EmbeddingProvider> = {
     ],
   },
 
-  // Naver CLOVA Studio — embedding v2. The endpoint takes a single `{"text": …}`
-  // body and returns `{status, result:{embedding:[…1024 floats], inputTokens}}`,
-  // with no batch array and no `usage` object, hence `singleTextProtocol`.
-  "clova-studio": {
-    id: "clova-studio",
-    baseUrl: "https://clovastudio.stream.ntruss.com/v1/api-tools/embedding/v2",
-    authType: "apikey",
-    authHeader: "bearer",
-    singleTextProtocol: "clova-v2",
-    models: [{ id: "clova-embedding-v2", name: "CLOVA Embedding v2", dimensions: 1024 }],
-  },
-
   "jina-ai": {
     id: "jina-ai",
     structuredInputProtocol: "jina-v1",
@@ -428,7 +416,6 @@ export const EMBEDDING_PROVIDERS: Record<string, EmbeddingProvider> = {
       },
     ],
   },
-
 };
 
 const EMBEDDING_PROVIDER_ALIASES: Record<string, string> = {
@@ -563,9 +550,7 @@ export function deriveEmbeddingProviderForChatProvider(
   chatEntry: { id?: string; baseUrl?: string | string[] } | null | undefined
 ): EmbeddingProvider | null {
   if (!chatEntry) return null;
-  const rawBase = Array.isArray(chatEntry.baseUrl)
-    ? chatEntry.baseUrl[0]
-    : chatEntry.baseUrl;
+  const rawBase = Array.isArray(chatEntry.baseUrl) ? chatEntry.baseUrl[0] : chatEntry.baseUrl;
   if (!rawBase || typeof rawBase !== "string") return null;
   // stripTrailingSlashes-equivalent without importing open-sse utils here:
   const base = rawBase.replace(/\/+$/, "");
