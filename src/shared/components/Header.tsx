@@ -30,8 +30,6 @@ import {
   type SidebarItemDefinition,
   type HideableSidebarItemId,
 } from "@/shared/constants/sidebarVisibility";
-import { useIsElectron } from "@/shared/hooks/useElectron";
-
 const isE2EMode = process.env.NEXT_PUBLIC_OMNIROUTE_E2E_MODE === "1";
 
 // Map sidebar item id → header description i18n key
@@ -183,13 +181,8 @@ export default function Header({
   const isMac = useSyncExternalStore(subscribePlatform, getPlatformIsMac, getPlatformIsMacServer);
   const pathname = usePathname();
   const router = useRouter();
-  const isElectron = useIsElectron();
   const t = useTranslations("header");
   const { title, description, icon, providerId } = usePageInfo(pathname);
-  const isMacElectron =
-    isElectron &&
-    typeof window !== "undefined" &&
-    (window as any).electronAPI?.platform === "darwin";
 
   const handleLogout = async () => {
     try {
