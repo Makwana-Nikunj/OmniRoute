@@ -192,7 +192,8 @@ function isLeaseConflict(error: unknown): boolean {
     (/UNIQUE constraint failed: exclusive_connection_leases\.(connection_id|lease_owner_hash)/i.test(
       error.message
     ) ||
-      /idx_exclusive_lease_active_(connection|owner)/i.test(error.message))
+      /idx_exclusive_lease_active_(connection|owner)/i.test(error.message) ||
+      /duplicate key value violates unique constraint/i.test(error.message))
   );
 }
 
