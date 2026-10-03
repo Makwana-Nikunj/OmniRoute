@@ -115,9 +115,7 @@ function isBackgroundServicesDisabled(): boolean {
  * Keeps essentials: graceful shutdown, DB, secrets, settings hydration, quota fetchers.
  */
 function isLeanStartup(): boolean {
-  const raw = process.env.OMNIROUTE_LEAN_STARTUP;
-  if (!raw) return false;
-  return new Set(["1", "true", "yes", "on"]).has(raw.trim().toLowerCase());
+  return true;
 }
 
 async function ensureSecrets(): Promise<void> {
@@ -326,7 +324,7 @@ export async function registerQuotaFetchers(): Promise<void> {
         id: typeof node.id === "string" ? node.id : null,
         prefix: typeof node.prefix === "string" ? node.prefix : null,
         baseUrl: typeof node.baseUrl === "string" ? node.baseUrl : null,
-      })),
+      }))
     );
   } catch (error) {
     console.warn("[STARTUP] Moonshot custom-node fetcher scan skipped:", error);
@@ -404,11 +402,7 @@ export async function registerNodejs(): Promise<void> {
   }
 
   // ── Essential modules (always loaded) ──────────────────────────────────
-  const [
-    { initGracefulShutdown },
-    { getSettings },
-    { applyRuntimeSettings },
-  ] = await Promise.all([
+  const [{ initGracefulShutdown }, { getSettings }, { applyRuntimeSettings }] = await Promise.all([
     import("@/lib/gracefulShutdown"),
     import("@/lib/db/settings"),
     import("@/lib/config/runtimeSettings"),
@@ -419,7 +413,10 @@ export async function registerNodejs(): Promise<void> {
   if (lean) {
     try {
       const settings = await getSettings();
-      const runtimeChanges = await applyRuntimeSettings(settings, { force: true, source: "startup" });
+      const runtimeChanges = await applyRuntimeSettings(settings, {
+        force: true,
+        source: "startup",
+      });
       if (runtimeChanges.length > 0) {
         console.log(
           `[STARTUP] Runtime settings hydrated: ${runtimeChanges
@@ -450,6 +447,26 @@ export async function registerNodejs(): Promise<void> {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn("[STARTUP] Could not restore runtime settings:", msg);
     }
+  }
+
+  // Ensure enterprise and compliance is started
+  try {
+    const { initAuditLog, cleanupExpiredLogs } = await import("@/lib/compliance/index");
+    initAuditLog();
+    console.log("[COMPLIANCE] Audit log table initialized");
+    const cleanup = await cleanupExpiredLogs();
+    if (
+      cleanup.deletedUsage ||
+      cleanup.deletedCallLogs ||
+      cleanup.deletedProxyLogs ||
+      cleanup.deletedRequestDetailLogs ||
+      cleanup.deletedAuditLogs ||
+      cleanup.deletedMcpAuditLogs
+    ) {
+      console.log("[COMPLIANCE] Expired log cleanup:", cleanup);
+    }
+  } catch (err) {
+    console.warn("[COMPLIANCE] Could not initialize audit log:", String(err));
   }
 
   // ── Full-mode modules (skipped in lean) ────────────────────────────────
@@ -527,7 +544,10 @@ export async function registerNodejs(): Promise<void> {
         source: "startup",
       });
       settings = passwordState.settings;
-      const runtimeChanges = await applyRuntimeSettings(settings, { force: true, source: "startup" });
+      const runtimeChanges = await applyRuntimeSettings(settings, {
+        force: true,
+        source: "startup",
+      });
       if (runtimeChanges.length > 0) {
         console.log(
           `[STARTUP] Runtime settings hydrated: ${runtimeChanges
@@ -682,12 +702,14 @@ export async function registerNodejs(): Promise<void> {
 
       // Conductor bridge (PRD Conductor RF1): mirrors OmniConductor hub tasks into the
       // A2A TaskManager via the hub SSE. Opt-in — self-gated on CONDUCTOR_HUB_URL.
-      import("@/lib/conductor/boot").then((m) => {
-        if (m.initConductorBridge()) console.log("[STARTUP] Conductor bridge started");
-      }).catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.warn("[STARTUP] Conductor bridge failed to start (non-fatal):", msg);
-      }),
+      import("@/lib/conductor/boot")
+        .then((m) => {
+          if (m.initConductorBridge()) console.log("[STARTUP] Conductor bridge started");
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn("[STARTUP] Conductor bridge failed to start (non-fatal):", msg);
+        }),
 
       // Proactive connection-cooldown recovery (#8): re-validate connections whose
       // transient `rate_limited_until` window has elapsed OUTSIDE the request hot path,
