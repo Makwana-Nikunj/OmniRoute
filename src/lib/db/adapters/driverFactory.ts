@@ -9,7 +9,7 @@ import {
   type NodeSqliteDatabaseLike,
 } from "./nodeSqliteShared";
 import type { SqliteAdapter } from "./types";
-
+import { PostgresAdapter } from "./postgresAdapter";
 
 type DriverLoader = (moduleName: string) => unknown;
 
@@ -303,6 +303,7 @@ export function tryOpenSync(
   filePath: string,
   options?: Record<string, unknown>
 ): SqliteAdapter | null {
+  if (process.env.DATABASE_URL) return new PostgresAdapter(process.env.DATABASE_URL);
   if (isPackBootForcedSqlJsSmoke(process.env)) return null;
   return openSyncDriver(filePath, options);
 }
