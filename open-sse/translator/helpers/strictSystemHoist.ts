@@ -1,4 +1,33 @@
-import { systemMessageMustBeFirst } from "../../../src/lib/memory/injection.ts";
+const BUILTIN_PROVIDERS_SYSTEM_MUST_BE_FIRST = new Set(["xiaomi-mimo", "mimo", "tokenrouter"]);
+
+function parseStrictSystemProvidersEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  const v = env.OMNIROUTE_STRICT_SYSTEM_PROVIDERS;
+  if (!v) return [];
+  return v
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function resolveProvidersSystemMustBeFirst(env: NodeJS.ProcessEnv = process.env): Set<string> {
+  const extra = parseStrictSystemProvidersEnv(env);
+  if (extra.length === 0) return BUILTIN_PROVIDERS_SYSTEM_MUST_BE_FIRST;
+  return new Set([...BUILTIN_PROVIDERS_SYSTEM_MUST_BE_FIRST, ...extra]);
+}
+
+/**
+ * Returns true when the given provider requires the system message to be first.
+ * Falls back to false for unknown/null providers.
+ * Honors OMNIROUTE_STRICT_SYSTEM_PROVIDERS for self-hosted additions.
+ */
+export function systemMessageMustBeFirst(
+  provider: string | null | undefined,
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  if (!provider) return false;
+  const normalized = provider.toLowerCase().trim();
+  return resolveProvidersSystemMustBeFirst(env).has(normalized);
+}
 
 type Message = { role: string; content: unknown; [key: string]: unknown };
 
@@ -7,7 +36,9 @@ function toTextContent(content: unknown): string {
   if (Array.isArray(content)) {
     return content
       .filter((part): part is { type: string; text?: unknown } => {
-        return Boolean(part) && typeof part === "object" && (part as { type?: unknown }).type === "text";
+        return (
+          Boolean(part) && typeof part === "object" && (part as { type?: unknown }).type === "text"
+        );
       })
       .map((part) => String(part.text ?? ""))
       .join("\n");
