@@ -43,8 +43,6 @@ import {
   validateCopilotM365WebProvider,
   validateCopilotWebProvider,
   validateT3WebProvider,
-  validateJulesProvider,
-  validateDevinCloudAgentProvider,
   validateInnerAiProvider,
   validateNotionWebProvider,
 } from "./validation/webProvidersB";
@@ -110,7 +108,6 @@ import { validateDifyProvider } from "./validation/dify";
 import { validateAdobeFireflyProvider } from "./validation/adobeFirefly";
 import {
   validateV0VercelProvider,
-  validateAuggieProvider,
   validateCursorApiProvider,
   validateQoderProvider,
   validateKiroProvider,
@@ -215,12 +212,9 @@ export async function validateProviderApiKey({ provider, apiKey, providerSpecifi
   const SPECIALTY_VALIDATORS = {
     "v0-vercel": ({ apiKey, providerSpecificData }: any) =>
       validateV0VercelProvider({ apiKey, providerSpecificData, isLocal }),
-    jules: validateJulesProvider,
     // "devin" is the Cognition cloud-agent provider (distinct from the "devin-cli"
     // LLM/ACP provider, which is already registered in providerRegistry). Wired here
     // for parity with the "jules" cloud-agent entry above — see #6142.
-    devin: validateDevinCloudAgentProvider,
-    auggie: validateAuggieProvider,
     "cursor-api": validateCursorApiProvider,
     aihorde: validateAiHordeProvider,
     // #10522: registered under both the canonical id and the short alias — Firefly

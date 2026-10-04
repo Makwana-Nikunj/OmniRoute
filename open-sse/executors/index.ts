@@ -42,10 +42,6 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
     ),
   maxai: () => import("./maxai.ts").then((m) => new m.MaxAiExecutor()),
   uc: () => import("./uc.ts").then((m) => new m.UcExecutor()),
-  "chatgpt-web-codex": () =>
-    import("./chatgpt-web-codex.ts").then((m) => new m.ChatGptWebCodexExecutor()),
-  "cgpt-codex": () => import("./chatgpt-web-codex.ts").then((m) => new m.ChatGptWebCodexExecutor()),
-  "chatgpt-web": () => import("./chatgpt-web.ts").then((m) => new m.ChatGptWebExecutor()),
   cursor: () => import("./cursor.ts").then((m) => new m.CursorExecutor()),
   trae: () => import("./trae.ts").then((m) => new m.TraeExecutor()),
   glm: () => import("./glm.ts").then((m) => new m.GlmExecutor("glm")),
@@ -65,8 +61,6 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   "1min": () => import("./oneminai.ts").then((m) => new m.OneMinAiExecutor()), // Alias
   pollinations: () => import("./pollinations.ts").then((m) => new m.PollinationsExecutor()),
   pol: () => import("./pollinations.ts").then((m) => new m.PollinationsExecutor()), // Alias
-  "cloudflare-ai": () => import("./cloudflare-ai.ts").then((m) => new m.CloudflareAIExecutor()),
-  cf: () => import("./cloudflare-ai.ts").then((m) => new m.CloudflareAIExecutor()), // Alias
   freebuff: () => import("./freebuff.ts").then((m) => new m.FreebuffExecutor()),
   fb: () => import("./freebuff.ts").then((m) => new m.FreebuffExecutor()), // Alias
   "opencode-zen": () => import("./opencode.ts").then((m) => new m.OpencodeExecutor("opencode-zen")),
@@ -80,52 +74,15 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   dr: () => import("./dario.ts").then((m) => new m.DarioExecutor()), // Alias
   "9router": () => import("./ninerouter.ts").then((m) => new m.NineRouterExecutor()),
   nr: () => import("./ninerouter.ts").then((m) => new m.NineRouterExecutor()), // Alias
-  "perplexity-web": () => import("./perplexity-web.ts").then((m) => new m.PerplexityWebExecutor()),
-  "pplx-web": () => import("./perplexity-web.ts").then((m) => new m.PerplexityWebExecutor()), // Alias
   "grok-web": () => import("./grok-web.ts").then((m) => new m.GrokWebExecutor()),
-  "claude-web": () => import("./claude-web.ts").then((m) => new m.ClaudeWebExecutor()),
-  "cw-web": () => import("./claude-web.ts").then((m) => new m.ClaudeWebExecutor()), // Alias
-  "gemini-web": () => import("./gemini-web.ts").then((m) => new m.GeminiWebExecutor()),
-  gweb: () => import("./gemini-web.ts").then((m) => new m.GeminiWebExecutor()), // Alias
   "gemini-business": () =>
     import("./gemini-business.ts").then((m) => new m.GeminiBusinessExecutor()),
   gembiz: () => import("./gemini-business.ts").then((m) => new m.GeminiBusinessExecutor()), // Alias
-  "blackbox-web": () => import("./blackbox-web.ts").then((m) => new m.BlackboxWebExecutor()),
-  "bb-web": () => import("./blackbox-web.ts").then((m) => new m.BlackboxWebExecutor()), // Alias
-  "muse-spark-web": () => import("./muse-spark-web.ts").then((m) => new m.MuseSparkWebExecutor()),
-  "ms-web": () => import("./muse-spark-web.ts").then((m) => new m.MuseSparkWebExecutor()), // Alias
-  "devin-desktop": () => import("./devin-desktop.ts").then((m) => new m.DevinDesktopExecutor()),
   "zed-hosted": () => import("./zed-hosted.ts").then((m) => new m.ZedHostedExecutor()),
-  "devin-cli": () => import("./devin-cli.ts").then((m) => new m.DevinCliExecutor()),
   zcode: () => import("./zcode.ts").then((m) => new m.ZcodeExecutor()),
   zc: () => import("./zcode.ts").then((m) => new m.ZcodeExecutor()), // Alias
-  "devin-cli-agentic": () =>
-    import("./devin-cli-agentic.ts").then((m) => new m.DevinCliAgenticExecutor()),
-  devin: () => import("./devin-cli.ts").then((m) => new m.DevinCliExecutor()), // Alias
-  "deepseek-web": () =>
-    import("./deepseek-web-with-auto-refresh.ts").then(
-      (m) => new m.DeepSeekWebWithAutoRefreshExecutor()
-    ),
-  "ds-web": () =>
-    import("./deepseek-web-with-auto-refresh.ts").then(
-      (m) => new m.DeepSeekWebWithAutoRefreshExecutor()
-    ), // Alias
-  "adapta-web": () => import("./adapta-web.ts").then((m) => new m.AdaptaWebExecutor()),
-  "adp-web": () => import("./adapta-web.ts").then((m) => new m.AdaptaWebExecutor()), // Alias
-  "copilot-web": () => import("./copilot-web.ts").then((m) => new m.CopilotWebExecutor()),
-  "copilot-m365-web": () =>
-    import("./copilot-m365-web.ts").then((m) => new m.CopilotM365WebExecutor()),
-  copilot: () => import("./copilot-web.ts").then((m) => new m.CopilotWebExecutor()), // Alias
-  "adobe-firefly": () => import("./adobe-firefly.ts").then((m) => new m.AdobeFireflyExecutor()),
-  firefly: () => import("./adobe-firefly.ts").then((m) => new m.AdobeFireflyExecutor()), // Alias
   "veoaifree-web": () => import("./veoaifree-web.ts").then((m) => new m.VeoAIFreeWebExecutor()),
   "veo-free": () => import("./veoaifree-web.ts").then((m) => new m.VeoAIFreeWebExecutor()), // Alias
-  "duckduckgo-web": () => import("./duckduckgo-web.ts").then((m) => new m.DuckDuckGoWebExecutor()),
-  ddgw: () => import("./duckduckgo-web.ts").then((m) => new m.DuckDuckGoWebExecutor()), // Alias
-  "t3-web": () => import("./t3-chat-web.ts").then((m) => new m.T3ChatWebExecutor()),
-  t3chat: () => import("./t3-chat-web.ts").then((m) => new m.T3ChatWebExecutor()), // Alias
-  "inner-ai": () => import("./inner-ai.ts").then((m) => new m.InnerAiExecutor()),
-  "in-ai": () => import("./inner-ai.ts").then((m) => new m.InnerAiExecutor()), // Alias
   huggingchat: () => import("./huggingchat.ts").then((m) => new m.HuggingChatExecutor()),
   hc: () => import("./huggingchat.ts").then((m) => new m.HuggingChatExecutor()), // Alias
   "yuanbao-web": () => import("./yuanbao-web.ts").then((m) => new m.YuanbaoWebExecutor()),
@@ -139,26 +96,15 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   // routed API-key traffic to GraphQL /api/gql_POST → HTTP 405.
   "venice-web": () => import("./venice-web.ts").then((m) => new m.VeniceWebExecutor()),
   ven: () => import("./venice-web.ts").then((m) => new m.VeniceWebExecutor()), // Alias
-  "notion-web": () => import("./notion-web.ts").then((m) => new m.NotionWebExecutor()),
-  nw: () => import("./notion-web.ts").then((m) => new m.NotionWebExecutor()), // Alias
   promptql: () => import("./promptql.ts").then((m) => new m.PromptQlExecutor()),
   pql: () => import("./promptql.ts").then((m) => new m.PromptQlExecutor()), // Alias
   "v0-vercel-web": () => import("./v0-vercel-web.ts").then((m) => new m.V0VercelWebExecutor()),
   v0: () => import("./v0-vercel-web.ts").then((m) => new m.V0VercelWebExecutor()), // Alias
-  "kimi-web": () => import("./kimi-web.ts").then((m) => new m.KimiWebExecutor()),
   "kimi-coding-apikey": () =>
     import("./kimi.ts").then((m) => new m.KimiExecutor("kimi-coding-apikey")), // Legacy alias
   "kimi-coding": () => import("./kimi.ts").then((m) => new m.KimiExecutor()), // Alias
   moonshot: () => import("./moonshot.ts").then((m) => new m.MoonshotExecutor()),
   kimi: () => import("./moonshot.ts").then((m) => new m.MoonshotExecutor("kimi")), // Hidden legacy Moonshot provider id
-  cheaperinference: () =>
-    import("./cheaperinference.ts").then((m) => new m.CheaperInferenceExecutor()),
-  cinf: () =>
-    import("./cheaperinference.ts").then((m) => new m.CheaperInferenceExecutor("cheaperinference")), // Alias
-  "doubao-web": () => import("./doubao-web.ts").then((m) => new m.DoubaoWebExecutor()),
-  db: () => import("./doubao-web.ts").then((m) => new m.DoubaoWebExecutor()), // Alias
-  "zai-web": () => import("./zai-web.ts").then((m) => new m.ZaiWebExecutor()),
-  zw: () => import("./zai-web.ts").then((m) => new m.ZaiWebExecutor()), // Alias
   chipotle: () => import("./chipotle.ts").then((m) => new m.ChipotleExecutor()),
   pepper: () => import("./chipotle.ts").then((m) => new m.ChipotleExecutor()), // Alias
   lmarena: () => import("./lmarena.ts").then((m) => new m.LMArenaExecutor()),
@@ -171,12 +117,9 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   "cloudflare-playground": () =>
     import("./cloudflare-playground.ts").then((m) => new m.CloudflarePlaygroundExecutor()),
   cfp: () => import("./cloudflare-playground.ts").then((m) => new m.CloudflarePlaygroundExecutor()), // Alias for cloudflare-playground
-  "tinycms-web": () => import("./tinycms.ts").then((m) => new m.TinyCmsExecutor()),
-  tcw: () => import("./tinycms.ts").then((m) => new m.TinyCmsExecutor()), // Alias
   hyperagent: () => import("./hyperagent.ts").then((m) => new m.HyperAgentExecutor()),
   ha: () => import("./hyperagent.ts").then((m) => new m.HyperAgentExecutor()), // Alias
   zmf: () => import("./zenmux-free.ts").then((m) => new m.ZenmuxFreeExecutor()), // Alias for zenmux-free
-  auggie: () => import("./auggie.ts").then((m) => new m.AuggieExecutor()),
   xai: () => import("./xai.ts").then((m) => new m.XaiExecutor()),
   "xai-oauth": () => import("./xai.ts").then((m) => new m.XaiExecutor("xai-oauth")),
   xao: () => import("./xai.ts").then((m) => new m.XaiExecutor("xai-oauth")),

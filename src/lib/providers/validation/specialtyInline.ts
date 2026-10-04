@@ -45,22 +45,6 @@ export async function validateV0VercelProvider({ apiKey, providerSpecificData, i
   }
 }
 
-// auggie is a fully local, credential-less CLI passthrough — there is no API
-// key to check upstream. The only meaningful validation is confirming the
-// `auggie` binary is installed and runnable on this machine.
-export async function validateAuggieProvider() {
-  const { checkAuggieCliVersion } = await import("@omniroute/open-sse/executors/auggie.ts");
-  const result = await checkAuggieCliVersion();
-  if (!result.ok) {
-    return {
-      valid: false,
-      error: result.error || "Auggie CLI not found. Install it and run `auggie login`.",
-      unsupported: false,
-    };
-  }
-  return { valid: true, error: null, unsupported: false, method: result.version };
-}
-
 export async function validateCursorApiProvider({ apiKey }: { apiKey?: string }) {
   const { exchangeCursorApiKey, CursorApiKeyExchangeError, isCursorApiKey } =
     await import("@omniroute/open-sse/services/cursorApiKeyAuth.ts");
@@ -357,12 +341,6 @@ export async function validateXiaomiMimoProvider({ apiKey, providerSpecificData,
     return toValidationErrorResult(error);
   }
 }
-
-/**
- * Build Opengateway-style validators (xiaomi-mimo compatible).
- * These providers share a POST /chat/completions auth check pattern and differ
- * only in default baseUrl and test model name.
- */
 export function buildOpengatewayValidator(defaultBaseUrl: string, model: string) {
   return async ({ apiKey, providerSpecificData, isLocal }: any) => {
     try {
