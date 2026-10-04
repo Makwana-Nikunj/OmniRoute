@@ -184,6 +184,7 @@ function isOptionalFts5Migration(migration: { version: string; name: string }): 
 }
 
 export function supportsFts5(db: SqliteAdapter): boolean {
+  if (db.name === "neon-db") return false;
   const cached = fts5SupportCache.get(db);
   if (cached !== undefined) {
     return cached;
@@ -1088,7 +1089,7 @@ export function runMigrations(
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       if (
-        message.includes("duplicate column name") &&
+        (message.includes("duplicate column name") || /already exists/.test(message)) &&
         !atomicPhysicalReplays.has(migration.version)
       ) {
         const applyMarkerOnly = db.transaction(() => {

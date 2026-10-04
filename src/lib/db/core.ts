@@ -12,6 +12,7 @@ import {
   getSqlJsPreInitError,
   openDatabaseAsync,
 } from "./adapters/driverFactory";
+import { PostgresAdapter } from "./adapters/postgresAdapter";
 import path from "path";
 import { retryProbeIfTransient } from "./probeUtils";
 import fs from "fs";
@@ -378,7 +379,7 @@ const SCHEMA_SQL = `
     tokens_cache_creation INTEGER DEFAULT NULL,
     tokens_reasoning INTEGER DEFAULT NULL,
     tokens_compressed INTEGER DEFAULT NULL,
-    cache_source TEXT DEFAULT "upstream",
+    cache_source TEXT DEFAULT 'upstream',
     request_type TEXT,
     source_format TEXT,
     target_format TEXT,
@@ -1020,37 +1021,69 @@ export function getDbInstance(): SqliteDatabase {
   const existing = getDb();
   if (existing) return existing;
 
-  if (isCloud || isBuildPhase) {
-    if (isBuildPhase) {
-      console.log("[DB] Build phase detected — using no-op SQLite stub (never queried)");
-      // A no-op stub during build avoids loading the better-sqlite3 native
-      // bindings entirely. The native Statement destructor crashes with SIGABRT
-      // when the Next.js build worker thread exits (assertion in
-      // node::RemoveEnvironmentCleanupHook, env == nullptr). The DB is never
-      // actually queried during build — it only exists so module-eval that
-      // touches getDbInstance() at build time does not throw. (#10060)
-      const noopStatement: PreparedStatement = {
-        run: () => ({ changes: 0, lastInsertRowid: 0 }),
-        get: () => undefined,
-        all: () => [],
-      };
-      const stubDb: SqliteDatabase = {
-        driver: "sql.js",
-        open: true,
-        name: ":memory:",
-        prepare: () => noopStatement,
-        exec: () => {},
-        pragma: () => undefined,
-        transaction: <T>(fn: (...args: unknown[]) => T) => fn,
-        immediate: (fn: () => void) => fn(),
-        backup: async () => {},
-        checkpoint: () => {},
-        close: () => {},
-        raw: null,
-      };
-      setDb(stubDb);
-      return stubDb;
+  if (isBuildPhase) {
+    console.log("[DB] Build phase detected — using no-op SQLite stub (never queried)");
+    const noopStatement: PreparedStatement = {
+      run: () => ({ changes: 0, lastInsertRowid: 0 }),
+      get: () => undefined,
+      all: () => [],
+    };
+    const stubDb: SqliteDatabase = {
+      driver: "sql.js",
+      open: true,
+      name: ":memory:",
+      prepare: () => noopStatement,
+      exec: () => {},
+      pragma: () => undefined,
+      transaction: <T>(fn: (...args: unknown[]) => T) => fn,
+      immediate: (fn: () => void) => fn(),
+      backup: async () => {},
+      checkpoint: () => {},
+      close: () => {},
+      raw: null,
+    };
+    setDb(stubDb);
+    return stubDb;
+  }
+
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (databaseUrl) {
+    const pgAdapter = new PostgresAdapter(databaseUrl);
+    console.log(`[DB] Driver: neon-db`);
+
+    pgAdapter.exec(SCHEMA_SQL);
+    ensureUsageHistoryAccountIndex(pgAdapter);
+
+    try {
+      pgAdapter.exec("CREATE EXTENSION IF NOT EXISTS pgcrypto");
+    } catch {
+      // pgcrypto may already be installed or be unavailable; non-fatal for now.
     }
+
+    pgAdapter.exec(`
+      CREATE TABLE IF NOT EXISTS _omniroute_migrations (
+        version TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT OR IGNORE INTO _omniroute_migrations (version, name)
+      VALUES ('001', 'initial_schema');
+    `);
+
+    runMigrations(pgAdapter, { isNewDb: true, databaseExistedBeforeInitialization: false });
+    ensureUsageHistoryAccountIndex(pgAdapter);
+
+    try {
+      applyStoredDatabaseOptimizationSettings(pgAdapter);
+    } catch {
+      // Postgres does not support SQLite pragma-based optimization; skip gracefully.
+    }
+
+    setDb(pgAdapter);
+    return pgAdapter;
+  }
+
+  if (isCloud) {
     const memoryDb = openSqliteDatabase(":memory:");
     memoryDb.pragma("journal_mode = WAL");
     memoryDb.exec(SCHEMA_SQL);
@@ -1489,8 +1522,18 @@ export function getDriverInfo(): DbDriverInfo | null {
 export async function ensureDbInitialized(): Promise<void> {
   if (getDb()) return;
 
-  // Cloud/build: getDbInstance() cria in-memory, sem necessidade de pré-init
-  if (isCloud || isBuildPhase || !SQLITE_FILE) {
+  if (isBuildPhase) {
+    getDbInstance();
+    return;
+  }
+
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (databaseUrl) {
+    getDbInstance();
+    return;
+  }
+
+  if (isCloud || !SQLITE_FILE) {
     getDbInstance();
     return;
   }

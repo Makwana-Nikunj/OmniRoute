@@ -1,7 +1,7 @@
 {
   "name": "omniroute",
   "version": "3.8.51",
-  "description": "Unified AI proxy/router with auto-fallback, combo routing, and OpenAI-compatible APIs.",
+  "description": "Unified AI proxy/router with 356 providers, auto-fallback, combo routing, and OpenAI-compatible APIs.",
   "type": "module",
   "files": [
     "dist/",

@@ -5,7 +5,7 @@ UPDATE provider_connections
 SET is_active = 0,
     test_status = 'unavailable',
     last_error = 'Provider retired from OmniRoute runtime.',
-    last_error_at = COALESCE(last_error_at, CURRENT_TIMESTAMP),
+    last_error_at = COALESCE(last_error_at, strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     last_error_type = 'provider_retired',
     last_error_source = 'migration:retire-microsoft-designer-web'
 WHERE lower(trim(provider, ' ' || char(9) || char(10) || char(11) || char(12) || char(13)))
@@ -13,7 +13,7 @@ WHERE lower(trim(provider, ' ' || char(9) || char(10) || char(11) || char(12) ||
 
 UPDATE exclusive_connection_leases
 SET state = 'INVALIDATED',
-    ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP),
+    ended_at = COALESCE(ended_at, strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     end_reason = 'AUTHORIZATION_CHANGED'
 WHERE state = 'ACTIVE'
   AND (
@@ -36,14 +36,14 @@ BEGIN
   SET is_active = 0,
       test_status = 'unavailable',
       last_error = 'Provider retired from OmniRoute runtime.',
-      last_error_at = COALESCE(last_error_at, CURRENT_TIMESTAMP),
+      last_error_at = COALESCE(last_error_at, strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
       last_error_type = 'provider_retired',
       last_error_source = 'migration:retire-microsoft-designer-web'
   WHERE id = NEW.id;
 
   UPDATE exclusive_connection_leases
   SET state = 'INVALIDATED',
-      ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP),
+      ended_at = COALESCE(ended_at, strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
       end_reason = 'AUTHORIZATION_CHANGED'
   WHERE connection_id = NEW.id AND state = 'ACTIVE';
 END;
@@ -65,14 +65,14 @@ BEGIN
   SET is_active = 0,
       test_status = 'unavailable',
       last_error = 'Provider retired from OmniRoute runtime.',
-      last_error_at = COALESCE(last_error_at, CURRENT_TIMESTAMP),
+      last_error_at = COALESCE(last_error_at, strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
       last_error_type = 'provider_retired',
       last_error_source = 'migration:retire-microsoft-designer-web'
   WHERE id = NEW.id;
 
   UPDATE exclusive_connection_leases
   SET state = 'INVALIDATED',
-      ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP),
+      ended_at = COALESCE(ended_at, strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
       end_reason = 'AUTHORIZATION_CHANGED'
   WHERE connection_id = NEW.id AND state = 'ACTIVE';
 END;

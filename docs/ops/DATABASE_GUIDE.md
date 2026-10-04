@@ -6,11 +6,12 @@ lastUpdated: 2026-08-23
 
 # Database Schema & Operations Guide
 
-> **TL;DR**: OmniRoute uses **SQLite with WAL journaling** as its primary store, with **AES-256-GCM** encryption at rest for sensitive fields. This guide covers the schema, migrations, backup/recovery, and operational runbooks.
+> **TL;DR**: OmniRoute uses **SQLite with WAL journaling** as its default store (or **PostgreSQL / NeonDB** when `DATABASE_URL` is set), with **AES-256-GCM** encryption at rest for sensitive fields. This guide covers the schema, migrations, backup/recovery, and operational runbooks.
 
 **Sources:**
 
 - `src/lib/db/core.ts` — singleton + SCHEMA_SQL (17 base tables)
+- `src/lib/db/adapters/postgresAdapter.ts` — PostgreSQL/NeonDB adapter with worker connection pool
 - `src/lib/db/migrationRunner.ts` — versioned migrations
 - `src/lib/db/migrations/` — 167 versioned SQL files
 - `src/lib/db/encryption.ts` — encryption helpers
@@ -53,6 +54,31 @@ The default cache size is **65,536 KiB (64 MiB)**. SQLite interprets a negative
 **Settings > System & Storage > Cache Size** accepts integer values from **1 to
 1,000,000 KiB**; saving the setting applies it to the live database connection,
 and OmniRoute restores the persisted value at startup.
+
+---
+
+## PostgreSQL & NeonDB Support
+
+For cloud and container deployments (such as Render, Railway, Fly.io, AWS, or multi-instance containers) where local disk persistence is ephemeral or unavailable, OmniRoute supports **PostgreSQL** and **NeonDB** as a drop-in replacement for SQLite.
+
+### Enabling Postgres / NeonDB
+
+Set the `DATABASE_URL` environment variable:
+
+```bash
+DATABASE_URL="postgresql://user:password@ep-sample-123.us-east-2.aws.neon.tech/neondb?sslmode=require"
+```
+
+When `DATABASE_URL` is set:
+
+1. **Adapter Selection:** `src/lib/db/core.ts` initializes `PostgresAdapter` instead of `better-sqlite3`.
+2. **Worker Pool Execution:** A worker thread manages a dedicated `pg.Pool` connection pool with synchronous cross-thread communication using `SharedArrayBuffer` and `Atomics` (allowing synchronous query execution without breaking SQLite-style synchronous domain code).
+3. **Dialect Translation:** SQLite SQL queries and migrations are converted on the fly via `convertSql()`:
+   - Data types (`INTEGER PRIMARY KEY AUTOINCREMENT` → `SERIAL PRIMARY KEY`, `BLOB` → `BYTEA`).
+   - SQLite JSON functions (`json_extract`, `json_type`, `json_array`, `json_array_length`, `json_valid`, `json_set`, `json_remove`) → Postgres `jsonb` operators and functions.
+   - Suffix/conflict clauses (`INSERT OR IGNORE` → `ON CONFLICT DO NOTHING`, `INSERT OR REPLACE` → `ON CONFLICT (...) DO UPDATE`).
+   - Semicolon-safe trigger splitting and execution.
+4. **Automatic Migrations:** All versioned SQL migrations run automatically against PostgreSQL on first startup.
 
 ---
 

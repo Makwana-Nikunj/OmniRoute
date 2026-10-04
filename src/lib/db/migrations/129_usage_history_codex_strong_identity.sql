@@ -11,8 +11,7 @@
 -- never derive a workspace-qualified key from that current value.
 -- Email equality is deliberately NOT required (email can change). Snapshots
 -- with a current nonblank workspace, workspace/email snapshots, mismatched
--- users, and other unproven identities stay unchanged until runtime observes
--- the matching account again.
+-- users, and other unproven identities keep their historical identity.
 --
 -- Snapshots that are already strong, deleted/exported orphans, non-Codex,
 -- non-OAuth, or malformed keep their historical identity. The statement is a

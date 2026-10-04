@@ -206,7 +206,7 @@ WHERE provider_id = 'windsurf'
     FROM discovery_results AS destination
     WHERE destination.provider_id = 'devin-desktop'
       AND destination.method = discovery_results.method
-      AND destination.endpoint IS discovery_results.endpoint
+      AND destination.endpoint = discovery_results.endpoint
   );
 
 UPDATE discovery_results
