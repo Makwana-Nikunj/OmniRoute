@@ -147,9 +147,7 @@ async function cleanup(): Promise<void> {
     }
 
     try {
-      const { stopChatGptWebCodexRuntime } =
-        await import("@omniroute/open-sse/executors/chatgpt-web-codex/runtime.ts");
-      await stopChatGptWebCodexRuntime();
+      const { stopChatGptWebCodexRuntime } = await stopChatGptWebCodexRuntime();
       console.log("[Shutdown] ChatGPT Web (Codex) runtime stopped.");
     } catch {
       /* feature unused */

@@ -10,7 +10,6 @@ import { SEGMIND_IMAGE_PROVIDER } from "./providers/registry/segmind/imageModels
 import { KIE_IMAGE_MODELS } from "./providers/registry/kie/imageModels.ts";
 import { MAGNIFIC_IMAGE_PROVIDER } from "./providers/registry/magnific/index.ts";
 import { STABILITY_AI_IMAGE_MODELS } from "./providers/registry/stability-ai/imageModels.ts";
-import { CHEAPERINFERENCE_IMAGE_PROVIDER } from "./providers/registry/cheaperinference/imageModels.ts";
 import {
   ADOBE_FIREFLY_IMAGE_ROUTING_ALIASES,
   toRegistryImageModels,
