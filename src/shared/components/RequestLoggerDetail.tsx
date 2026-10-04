@@ -17,10 +17,7 @@ import {
 } from "@/shared/hooks/useTimestampTitles";
 import { JsonTreeExpandControls } from "@/shared/components/JsonTreeExpandControls";
 import { useJsonTreeExpandLevel } from "@/store/jsonTreeExpandStore";
-import {
-  PayloadSection,
-  ConversationContextSection,
-} from "@/shared/components/RequestLoggerDetail.sections";
+import { PayloadSection } from "@/shared/components/RequestLoggerDetail.sections";
 
 // ─── Copy-all composition ────────────────────────────────────────────────────
 // Compose every visible payload section + stream chunk into a single block so
@@ -999,8 +996,6 @@ export default function RequestLoggerDetail({
             </div>
           ) : (
             <>
-              <ConversationContextSection key={log.id} log={log} detail={detail} />
-
               {streamChunks && streamChunks.provider && (
                 <StreamSection
                   title={t("providerEventStream")}

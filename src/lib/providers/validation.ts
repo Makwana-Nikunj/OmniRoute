@@ -38,7 +38,6 @@ import {
   validateMuseSparkWebProvider,
   validateAdaptaWebProvider,
   validateTinyCmsWebProvider,
-  validateClaudeWebProvider,
   validateGeminiWebProvider,
   validateCopilotM365WebProvider,
   validateCopilotWebProvider,
@@ -307,7 +306,6 @@ export async function validateProviderApiKey({ provider, apiKey, providerSpecifi
     "inner-ai": validateInnerAiProvider,
     "adapta-web": validateAdaptaWebProvider,
     "tinycms-web": validateTinyCmsWebProvider,
-    "claude-web": validateClaudeWebProvider,
     "gemini-web": validateGeminiWebProvider,
     "notion-web": validateNotionWebProvider,
     "copilot-m365-web": validateCopilotM365WebProvider,
@@ -506,3 +504,4 @@ export async function validateProviderApiKey({ provider, apiKey, providerSpecifi
     return toValidationErrorResult(error);
   }
 }
+// test reload
