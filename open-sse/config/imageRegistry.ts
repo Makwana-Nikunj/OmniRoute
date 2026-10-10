@@ -10,7 +10,6 @@ import { SEGMIND_IMAGE_PROVIDER } from "./providers/registry/segmind/imageModels
 import { KIE_IMAGE_MODELS } from "./providers/registry/kie/imageModels.ts";
 import { MAGNIFIC_IMAGE_PROVIDER } from "./providers/registry/magnific/index.ts";
 import { STABILITY_AI_IMAGE_MODELS } from "./providers/registry/stability-ai/imageModels.ts";
-import { CHEAPERINFERENCE_IMAGE_PROVIDER } from "./providers/registry/cheaperinference/imageModels.ts";
 import {
   ADOBE_FIREFLY_IMAGE_ROUTING_ALIASES,
   toRegistryImageModels,
@@ -735,13 +734,6 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
     routingAliases: ADOBE_FIREFLY_IMAGE_ROUTING_ALIASES,
     supportedSizes: [],
   },
-
-  // Cheaper Inference (OSS-sponsor gateway). Declared AFTER adobe-firefly on
-  // purpose: it shares the nano-banana-pro / nano-banana-2 ids, and parseImageModel
-  // resolves a bare id by first-match over this object's iteration order, so
-  // Firefly keeps the bare ids and these are prefix-only. See the module for the
-  // full collision note.
-  cheaperinference: CHEAPERINFERENCE_IMAGE_PROVIDER,
 
   // Keep Bailian Coding Plan after existing duplicate model owners so adding
   // explicit `bailian-coding-plan/` and `bcp/` routes does not change

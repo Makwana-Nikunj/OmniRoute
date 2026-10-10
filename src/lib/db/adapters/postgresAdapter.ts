@@ -120,8 +120,22 @@ export function convertSql(sql: string): string {
       "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
     ],
     ["IFNULL", /\bIFNULL\s*\(/gi, "COALESCE("],
-    ["datetime('now') parens", /\(\s*datetime\s*\(\s*'now'\s*\)\s*\)/gi, "NOW()"],
-    ["datetime('now')", /\bdatetime\s*\(\s*'now'\s*\)/gi, "NOW()"],
+    ["COLLATE NOCASE", /\s+COLLATE\s+NOCASE\b/gi, ""],
+    [
+      "datetime('now') parens",
+      /\(\s*datetime\s*\(\s*'now'\s*\)\s*\)/gi,
+      "to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')",
+    ],
+    [
+      "datetime('now')",
+      /\bdatetime\s*\(\s*'now'\s*\)/gi,
+      "to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')",
+    ],
+    [
+      "datetime(column)",
+      /\bdatetime\s*\(\s*([a-zA-Z0-9_.]+)\s*\)/gi,
+      "to_char(($1)::timestamp, 'YYYY-MM-DD HH24:MI:SS')",
+    ],
     ["randomblob", /\brandomblob\s*\(/gi, "gen_random_bytes("],
     [
       "hex(randomblob)",
@@ -461,6 +475,72 @@ export function splitSqlStatements(sql: string): string[] {
   return statements;
 }
 
+function isPlainObject(obj: unknown): obj is Record<string, unknown> {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    !Array.isArray(obj) &&
+    !(obj instanceof Date) &&
+    !(obj instanceof Uint8Array)
+  );
+}
+
+function normalizeQueryParams(sql: string, args: unknown[]): { sql: string; params: unknown[] } {
+  const first = args[0];
+  const hasNamed = /[@:][a-zA-Z0-9_]+/.test(sql);
+
+  if (args.length === 1 && isPlainObject(first) && hasNamed) {
+    const obj = first as Record<string, unknown>;
+    const params: unknown[] = [];
+    let paramIndex = 1;
+    let convertedSql = "";
+    let inString = false;
+    let stringChar = "";
+
+    for (let i = 0; i < sql.length; i++) {
+      const char = sql[i];
+      if ((char === "'" || char === '"') && (i === 0 || sql[i - 1] !== "\\")) {
+        if (!inString) {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar) {
+          inString = false;
+        }
+        convertedSql += char;
+        continue;
+      }
+
+      if (!inString && (char === "@" || char === ":") && /[a-zA-Z_]/.test(sql[i + 1] || "")) {
+        const rest = sql.slice(i + 1);
+        const match = rest.match(/^[a-zA-Z0-9_]+/);
+        if (match) {
+          const paramName = match[0];
+          const val = obj[paramName] !== undefined ? obj[paramName] : null;
+          params.push(val);
+          convertedSql += "$" + paramIndex++;
+          i += paramName.length;
+          continue;
+        }
+      }
+
+      convertedSql += char;
+    }
+    return { sql: convertedSql, params };
+  }
+
+  // If query has no placeholders at all, params must be empty
+  if (!/\$|\?|@[a-zA-Z_]|:[a-zA-Z_]/.test(sql)) {
+    return { sql, params: [] };
+  }
+
+  const flatArgs = args.length === 1 && Array.isArray(args[0]) ? args[0] : args;
+  if (flatArgs.length === 1 && isPlainObject(flatArgs[0]) && !/\$[0-9]/.test(sql)) {
+    return { sql, params: [] };
+  }
+
+  return { sql, params: flatArgs };
+}
+
 export class PostgresAdapter implements SqliteAdapter {
   public driver: "better-sqlite3" | "node:sqlite" | "bun:sqlite" | "sql.js" = "better-sqlite3";
   public open = true;
@@ -527,19 +607,22 @@ export class PostgresAdapter implements SqliteAdapter {
     const pgSql = convertSql(rawSql);
 
     return {
-      all: (...params: unknown[]) => {
-        const res = this.querySync(pgSql, params);
+      all: (...args: unknown[]) => {
+        const { sql, params } = normalizeQueryParams(pgSql, args);
+        const res = this.querySync(sql, params);
         return res ? res.rows : [];
       },
-      get: (...params: unknown[]) => {
-        const res = this.querySync(pgSql, params);
+      get: (...args: unknown[]) => {
+        const { sql, params } = normalizeQueryParams(pgSql, args);
+        const res = this.querySync(sql, params);
         return res && res.rows.length > 0 ? res.rows[0] : undefined;
       },
-      run: (...params: unknown[]) => {
-        let isInsert = pgSql.trim().toUpperCase().startsWith("INSERT");
-        let finalSql = pgSql;
-        if (isInsert && !pgSql.toUpperCase().includes("RETURNING")) {
-          finalSql = pgSql + " RETURNING *";
+      run: (...args: unknown[]) => {
+        const { sql, params } = normalizeQueryParams(pgSql, args);
+        let isInsert = sql.trim().toUpperCase().startsWith("INSERT");
+        let finalSql = sql;
+        if (isInsert && !sql.toUpperCase().includes("RETURNING")) {
+          finalSql = sql + " RETURNING *";
         }
         const res = this.querySync(finalSql, params);
         return {

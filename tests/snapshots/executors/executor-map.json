@@ -10,21 +10,6 @@
       "configSource": "<custom-config>",
       "provider": "9router"
     },
-    "adapta-web": {
-      "className": "AdaptaWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "adapta-web"
-    },
-    "adobe-firefly": {
-      "className": "AdobeFireflyExecutor",
-      "configSource": "<custom-config>",
-      "provider": "adobe-firefly"
-    },
-    "adp-web": {
-      "className": "AdaptaWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "adapta-web"
-    },
     "agy": {
       "className": "AntigravityExecutor",
       "configSource": "antigravity",
@@ -40,11 +25,6 @@
       "configSource": "antigravity",
       "provider": "antigravity"
     },
-    "auggie": {
-      "className": "AuggieExecutor",
-      "configSource": "<custom-config>",
-      "provider": "auggie"
-    },
     "azure-ai": {
       "className": "AzureAiExecutor",
       "configSource": "openai",
@@ -55,65 +35,15 @@
       "configSource": "openai",
       "provider": "azure-openai"
     },
-    "bb-web": {
-      "className": "BlackboxWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "blackbox-web"
-    },
     "bedrock": {
       "className": "BedrockExecutor",
       "configSource": "bedrock",
       "provider": "bedrock"
     },
-    "blackbox-web": {
-      "className": "BlackboxWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "blackbox-web"
-    },
-    "cbcn": {
-      "className": "CodeBuddyCnExecutor",
-      "configSource": "codebuddy-cn",
-      "provider": "codebuddy-cn"
-    },
-    "cf": {
-      "className": "CloudflareAIExecutor",
-      "configSource": "cloudflare-ai",
-      "provider": "cloudflare-ai"
-    },
-    "cfp": {
-      "className": "CloudflarePlaygroundExecutor",
-      "configSource": "<custom-config>",
-      "provider": "cloudflare-playground"
-    },
-    "cgpt-codex": {
-      "className": "ChatGptWebCodexExecutor",
-      "configSource": "<custom-config>",
-      "provider": "chatgpt-web-codex"
-    },
-    "chatgpt-web": {
-      "className": "ChatGptWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "chatgpt-web"
-    },
-    "chatgpt-web-codex": {
-      "className": "ChatGptWebCodexExecutor",
-      "configSource": "<custom-config>",
-      "provider": "chatgpt-web-codex"
-    },
-    "cheaperinference": {
-      "className": "CheaperInferenceExecutor",
-      "configSource": "cheaperinference",
-      "provider": "cheaperinference"
-    },
     "chipotle": {
       "className": "ChipotleExecutor",
       "configSource": "<custom-config>",
       "provider": "chipotle"
-    },
-    "cinf": {
-      "className": "CheaperInferenceExecutor",
-      "configSource": "cheaperinference",
-      "provider": "cheaperinference"
     },
     "claude-web": {
       "className": "ClaudeWebExecutor",
@@ -125,35 +55,10 @@
       "configSource": "<custom-config>",
       "provider": "cliproxyapi"
     },
-    "cloudflare-ai": {
-      "className": "CloudflareAIExecutor",
-      "configSource": "cloudflare-ai",
-      "provider": "cloudflare-ai"
-    },
-    "cloudflare-playground": {
-      "className": "CloudflarePlaygroundExecutor",
-      "configSource": "<custom-config>",
-      "provider": "cloudflare-playground"
-    },
-    "clova-studio": {
-      "className": "ClovaStudioExecutor",
-      "configSource": "clova-studio",
-      "provider": "clova-studio"
-    },
     "cmd": {
       "className": "CommandCodeExecutor",
       "configSource": "<custom-config>",
       "provider": "command-code"
-    },
-    "cnl": {
-      "className": "ConolWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "conol-web"
-    },
-    "codebuddy-cn": {
-      "className": "CodeBuddyCnExecutor",
-      "configSource": "codebuddy-cn",
-      "provider": "codebuddy-cn"
     },
     "codex": {
       "className": "CodexExecutor",
@@ -169,26 +74,6 @@
       "className": "CommandCodeExecutor",
       "configSource": "<custom-config>",
       "provider": "command-code"
-    },
-    "conol-web": {
-      "className": "ConolWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "conol-web"
-    },
-    "copilot": {
-      "className": "CopilotWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "copilot-web"
-    },
-    "copilot-m365-web": {
-      "className": "CopilotM365WebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "copilot-m365-web"
-    },
-    "copilot-web": {
-      "className": "CopilotWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "copilot-web"
     },
     "cpa": {
       "className": "CliproxyapiExecutor",
@@ -225,70 +110,15 @@
       "configSource": "<custom-config>",
       "provider": "dario"
     },
-    "db": {
-      "className": "DoubaoWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "doubao-web"
-    },
-    "ddgw": {
-      "className": "DuckDuckGoWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "duckduckgo-web"
-    },
-    "deepseek-web": {
-      "className": "DeepSeekWebWithAutoRefreshExecutor",
-      "configSource": "<custom-config>",
-      "provider": "deepseek-web"
-    },
-    "devin": {
-      "className": "DevinCliExecutor",
-      "configSource": "<custom-config>",
-      "provider": "devin-cli"
-    },
-    "devin-cli": {
-      "className": "DevinCliExecutor",
-      "configSource": "<custom-config>",
-      "provider": "devin-cli"
-    },
-    "devin-cli-agentic": {
-      "className": "DevinCliAgenticExecutor",
-      "configSource": "<custom-config>",
-      "provider": "devin-cli-agentic"
-    },
-    "devin-desktop": {
-      "className": "DevinDesktopExecutor",
-      "configSource": "devin-desktop",
-      "provider": "devin-desktop"
-    },
-    "doubao-web": {
-      "className": "DoubaoWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "doubao-web"
-    },
     "dr": {
       "className": "DarioExecutor",
       "configSource": "<custom-config>",
       "provider": "dario"
     },
-    "ds-web": {
-      "className": "DeepSeekWebWithAutoRefreshExecutor",
-      "configSource": "<custom-config>",
-      "provider": "deepseek-web"
-    },
-    "duckduckgo-web": {
-      "className": "DuckDuckGoWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "duckduckgo-web"
-    },
     "fb": {
       "className": "FreebuffExecutor",
       "configSource": "freebuff",
       "provider": "freebuff"
-    },
-    "firefly": {
-      "className": "AdobeFireflyExecutor",
-      "configSource": "<custom-config>",
-      "provider": "adobe-firefly"
     },
     "freebuff": {
       "className": "FreebuffExecutor",
@@ -309,11 +139,6 @@
       "className": "GeminiBusinessExecutor",
       "configSource": "<custom-config>",
       "provider": "gemini-business"
-    },
-    "gemini-web": {
-      "className": "GeminiWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "gemini-web"
     },
     "ghe-copilot": {
       "className": "GheCopilotExecutor",
@@ -359,11 +184,6 @@
       "className": "GrokWebExecutor",
       "configSource": "<custom-config>",
       "provider": "grok-web"
-    },
-    "gweb": {
-      "className": "GeminiWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "gemini-web"
     },
     "ha": {
       "className": "HyperAgentExecutor",
@@ -440,35 +260,15 @@
       "configSource": "moonshot",
       "provider": "moonshot"
     },
-    "ms-web": {
-      "className": "MuseSparkWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "muse-spark-web"
-    },
-    "muse-spark-web": {
-      "className": "MuseSparkWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "muse-spark-web"
-    },
     "nlpcloud": {
       "className": "NlpCloudExecutor",
       "configSource": "nlpcloud",
       "provider": "nlpcloud"
     },
-    "notion-web": {
-      "className": "NotionWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "notion-web"
-    },
     "nr": {
       "className": "NineRouterExecutor",
       "configSource": "<custom-config>",
       "provider": "9router"
-    },
-    "nw": {
-      "className": "NotionWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "notion-web"
     },
     "oneminai": {
       "className": "OneMinAiExecutor",
@@ -495,11 +295,6 @@
       "configSource": "<custom-config>",
       "provider": "chipotle"
     },
-    "perplexity-web": {
-      "className": "PerplexityWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "perplexity-web"
-    },
     "poe-web": {
       "className": "PoeWebExecutor",
       "configSource": "<custom-config>",
@@ -515,11 +310,6 @@
       "configSource": "pollinations",
       "provider": "pollinations"
     },
-    "pplx-web": {
-      "className": "PerplexityWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "perplexity-web"
-    },
     "pql": {
       "className": "PromptQlExecutor",
       "configSource": "<custom-config>",
@@ -534,16 +324,6 @@
       "className": "QoderExecutor",
       "configSource": "qoder",
       "provider": "qoder"
-    },
-    "t3-web": {
-      "className": "T3ChatWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "t3-web"
-    },
-    "t3chat": {
-      "className": "T3ChatWebExecutor",
-      "configSource": "<custom-config>",
-      "provider": "t3-web"
     },
     "tasw": {
       "className": "TencentAIStudioWebExecutor",
@@ -676,6 +456,6 @@
       "provider": "zai-web"
     }
   },
-  "keyCount": 135,
+  "keyCount": 91,
   "sharedInstances": []
 }

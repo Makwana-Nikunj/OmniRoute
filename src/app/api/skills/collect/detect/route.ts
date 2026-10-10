@@ -65,10 +65,10 @@ async function detectInstalledTools(): Promise<Record<string, DetectedTool>> {
       try {
         const result = await getCliRuntimeStatus(toolId);
         detectedTools[toolId] = {
-          installed: result.installed,
-          runnable: result.runnable,
-          command: result.command ?? null,
-          reason: result.reason ?? null,
+          installed: result?.installed ?? false,
+          runnable: result?.runnable ?? false,
+          command: result?.command ?? null,
+          reason: result?.reason ?? null,
         };
       } catch {
         detectedTools[toolId] = {

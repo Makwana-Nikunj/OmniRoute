@@ -12,7 +12,11 @@ import {
 import { SafeOutboundFetchError } from "@/shared/network/safeOutboundFetch";
 import { normalizeSessionCookieHeader } from "@/lib/providers/webCookieAuth";
 import { normalizeGeminiCookieInput } from "@omniroute/open-sse/utils/geminiCookies.ts";
-import { buildJulesApiUrl } from "@/lib/cloudAgent/julesApi.ts";
+const JULES_API_BASE_URL = "https://jules.googleapis.com/v1alpha";
+function buildJulesApiUrl(path: string): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${JULES_API_BASE_URL}${normalized}`;
+}
 import {
   META_AI_ASBD_ID,
   META_AI_FRIENDLY_NAME,
@@ -298,8 +302,13 @@ export async function validateCopilotWebProvider({ apiKey, providerSpecificData 
     }
 
     // Extract token — may be bare JWT, cookie string with access_token=, or Bearer prefix
-    const { extractAccessToken } = await import("@omniroute/open-sse/executors/copilot-web.ts");
-    const token = extractAccessToken(raw);
+    const token = ((val: string) => {
+      const trimmed = val.trim();
+      if (!trimmed) return null;
+      if (/^eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(trimmed)) return trimmed;
+      const match = trimmed.match(/(?:access_token|bearer)\s*[:=]\s*([^\s;]+)/i);
+      return match ? match[1] : trimmed;
+    })(raw);
     if (!token) {
       return { valid: false, error: "Could not extract access_token from input" };
     }

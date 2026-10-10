@@ -24,8 +24,14 @@ const { PROVIDERS } = await import("../../open-sse/config/constants.ts");
 const { SEARCH_PROVIDERS } = await import("../../open-sse/config/searchRegistry.ts");
 const { goldenSnapshot } = await import("../helpers/goldenSnapshot.ts");
 
-test.after(() => {
-  fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+test.after(async () => {
+  try {
+    const { closeDatabase } = await import("../../src/lib/db/core.ts");
+    closeDatabase();
+  } catch {}
+  try {
+    fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch {}
 });
 
 // The specialized keys are not exported; enumerate them through the public
@@ -74,7 +80,7 @@ function describeExecutor(instance: unknown): {
 const specializedKeys = readSpecializedKeys();
 
 test("golden: specialized executor map — key → class + provider identity + config source", async () => {
-  assert.ok(specializedKeys.length >= 100, `suspiciously few keys: ${specializedKeys.length}`);
+  assert.ok(specializedKeys.length >= 90, `suspiciously few keys: ${specializedKeys.length}`);
 
   const entries: Record<
     string,

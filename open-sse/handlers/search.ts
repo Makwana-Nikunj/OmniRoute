@@ -43,7 +43,13 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { z } from "zod";
 import { sanitizeErrorMessage } from "../utils/error.ts";
-import { isValidContext7LibraryId } from "../executors/context7-fetch.ts";
+function isValidContext7LibraryId(id: string): id is string {
+  if (typeof id !== "string") return false;
+  const seg = /^[A-Za-z0-9][\w-]*(?:\.[\w-]+)*$/;
+  const m = /^\/(.+)\/(.+)$/.exec(id);
+  if (!m) return false;
+  return seg.test(m[1]) && seg.test(m[2]);
+}
 import { resolveSearchProxy, executeProviderFetch } from "./search/searchProxy.ts";
 import { formatSearchProviderFailure } from "./search/providerFailure.ts";
 

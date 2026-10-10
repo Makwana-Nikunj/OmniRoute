@@ -6,10 +6,32 @@
  */
 import os from "os";
 
+export const CLI_TOOL_IDS = [
+  "claude",
+  "codex",
+  "cursor",
+  "copilot",
+  "opencode",
+  "cline",
+  "kilocode",
+  "hermes",
+  "hermes-agent",
+  "openclaw",
+  "droid",
+  "continue",
+  "qwen",
+  "antigravity",
+  "windsurf",
+  "devin",
+] as const;
+
 export type CliRuntimeStatus = {
   installed: boolean;
   commandPath?: string;
   version?: string;
+  runnable?: boolean;
+  command?: string | null;
+  reason?: string | null;
 };
 
 export function getLookupEnv(): NodeJS.ProcessEnv {

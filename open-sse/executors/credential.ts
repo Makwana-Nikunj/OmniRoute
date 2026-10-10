@@ -24,7 +24,6 @@ const specializedCredentialExecutors: Record<string, CredentialExecutorLoader> =
   "zed-hosted": () => import("./zed-hosted.ts").then((m) => new m.ZedHostedExecutor()),
   "grok-cli": () => import("./grok-cli.ts").then((m) => new m.GrokCliExecutor()),
   gc: () => import("./grok-cli.ts").then((m) => new m.GrokCliExecutor()),
-  auggie: () => import("./auggie.ts").then((m) => new m.AuggieExecutor()),
   xai: () => import("./xai.ts").then((m) => new m.XaiExecutor()),
   "xai-oauth": () => import("./xai.ts").then((m) => new m.XaiExecutor("xai-oauth")),
   xao: () => import("./xai.ts").then((m) => new m.XaiExecutor("xai-oauth")),

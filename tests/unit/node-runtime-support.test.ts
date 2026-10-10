@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
 import {
   SUPPORTED_NODE_RANGE,
@@ -8,10 +8,6 @@ import {
   getNodeRuntimeWarning,
   parseNodeVersion,
 } from "../../src/shared/utils/nodeRuntimeSupport.ts";
-import {
-  getNodeRuntimeSupport as getCliNodeRuntimeSupport,
-  getNodeRuntimeWarning as getCliNodeRuntimeWarning,
-} from "../../bin/nodeRuntimeSupport.mjs";
 
 test("parseNodeVersion normalizes v-prefixed versions", () => {
   assert.deepEqual(parseNodeVersion("v22.22.2"), {
@@ -78,7 +74,16 @@ test("getNodeRuntimeSupport rejects unsupported major lines", () => {
   );
 });
 
-test("CLI runtime support stays aligned with the shared runtime policy", () => {
+test("CLI runtime support stays aligned with the shared runtime policy", async (t) => {
+  const binUrl = new URL("../../bin/nodeRuntimeSupport.mjs", import.meta.url);
+  if (!existsSync(binUrl)) {
+    t.skip("bin/nodeRuntimeSupport.mjs not present (lean-gateway mode)");
+    return;
+  }
+  const {
+    getNodeRuntimeSupport: getCliNodeRuntimeSupport,
+    getNodeRuntimeWarning: getCliNodeRuntimeWarning,
+  } = await import(binUrl.href);
   assert.deepEqual(getCliNodeRuntimeSupport("24.1.0"), getNodeRuntimeSupport("24.1.0"));
   assert.deepEqual(getCliNodeRuntimeSupport("22.22.2"), getNodeRuntimeSupport("22.22.2"));
   assert.equal(getCliNodeRuntimeWarning("27.1.0"), getNodeRuntimeWarning("27.1.0"));

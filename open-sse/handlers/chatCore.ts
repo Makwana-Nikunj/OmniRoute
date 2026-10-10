@@ -545,6 +545,13 @@ export async function handleChatCore({
   skipResourcePressureGuard = false,
   reasoningTransportFallback = "drop",
   managedLease = null,
+  // Set by callers that serve the OpenAI Responses API on a chat-shaped body
+  // (handleResponsesCore converts Responses→Chat before delegating here, so
+  // sourceFormat detects as plain OpenAI). Opt-in and read ONLY by the
+  // web_search-fallback non-streaming forcing below — it deliberately does not
+  // feed resolveChatCoreRequestFormat/clientResponseFormat, which must keep
+  // following the real endpoint/body detection.
+  isOpenAIResponsesClient = false,
   // #12150 P1b: additive, optional video-bridge log/Memory shadow — shape is
   // VideoBridgeLogParam (defined near the top of this file). Built once in chat.ts from
   // preCallGuardrails.results (video-bridge guardrail meta) and threaded here
@@ -964,7 +971,7 @@ export async function handleChatCore({
     // carries the executed results (function_call_output + web_search_call) and
     // JSON-tolerating Responses clients (pi-web-access) consume it directly.
     if (
-      sourceFormat === FORMATS.OPENAI_RESPONSES &&
+      (sourceFormat === FORMATS.OPENAI_RESPONSES || isOpenAIResponsesClient) &&
       (body as Record<string, unknown>).stream === true
     ) {
       (body as Record<string, unknown>).stream = false;

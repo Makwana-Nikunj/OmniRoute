@@ -45,20 +45,13 @@ export async function validateV0VercelProvider({ apiKey, providerSpecificData, i
   }
 }
 
-// auggie is a fully local, credential-less CLI passthrough — there is no API
-// key to check upstream. The only meaningful validation is confirming the
-// `auggie` binary is installed and runnable on this machine.
+// auggie is retired in lean gateway
 export async function validateAuggieProvider() {
-  const { checkAuggieCliVersion } = await import("@omniroute/open-sse/executors/auggie.ts");
-  const result = await checkAuggieCliVersion();
-  if (!result.ok) {
-    return {
-      valid: false,
-      error: result.error || "Auggie CLI not found. Install it and run `auggie login`.",
-      unsupported: false,
-    };
-  }
-  return { valid: true, error: null, unsupported: false, method: result.version };
+  return {
+    valid: false,
+    error: "Auggie provider has been retired",
+    unsupported: true,
+  };
 }
 
 export async function validateCursorApiProvider({ apiKey }: { apiKey?: string }) {

@@ -68,11 +68,7 @@ export default function DashboardLayout({ children }) {
 
       {/* Sidebar - Desktop: keep visibility independent from Tailwind hidden/lg:flex ordering. */}
       <div className="dashboard-sidebar-desktop">
-        <Sidebar
-          collapsed={collapsed}
-          onToggleCollapse={handleToggleCollapse}
-          isMacElectron={isMacElectron}
-        />
+        <Sidebar collapsed={collapsed} onToggleCollapse={handleToggleCollapse} />
       </div>
 
       {/* Sidebar - Mobile: full viewport height with proper scroll containment */}
@@ -81,7 +77,7 @@ export default function DashboardLayout({ children }) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar onClose={() => setSidebarOpen(false)} isMacElectron={isMacElectron} />
+        <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
       {/* Main content */}

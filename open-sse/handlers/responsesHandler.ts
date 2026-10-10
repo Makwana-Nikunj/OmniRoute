@@ -10,6 +10,7 @@ import { collectResponsesCustomToolNames } from "../translator/request/openai-re
 import { createResponsesApiTransformStream } from "../transformer/responsesTransformer.ts";
 import { createSseHeartbeatTransform, HEARTBEAT_SHAPES } from "../utils/sseHeartbeat.ts";
 import { SSE_HEARTBEAT_INTERVAL_MS } from "../config/constants.ts";
+import { synthesizeOpenAiSseFromJson } from "../utils/jsonToSse.ts";
 
 /**
  * Handle /v1/responses request
@@ -38,6 +39,7 @@ export async function handleResponsesCore({
 }) {
   const inputItems = Array.isArray(body?.input) ? body.input : [];
   const customToolNames = collectResponsesCustomToolNames(body?.tools, inputItems);
+  const originalStreamRequested = body?.stream === true;
 
   // Convert Responses API format to Chat Completions format
   const convertedBody = convertResponsesApiFormat(
@@ -47,10 +49,22 @@ export async function handleResponsesCore({
     modelInfo?.model
   );
 
-  // Ensure stream is enabled
+  // The handler contract is upstream streaming + SSE transformation, regardless
+  // of the client's stream flag (the Responses shim always emits SSE). The one
+  // exception — the web_search fallback, which must execute non-streaming — is
+  // applied inside chatCore (it forces stream:false on its own body only when
+  // the fallback actually fires and the client asked for stream:true), and the
+  // JSON it produces is converted back to SSE below via originalStreamRequested.
   convertedBody.stream = true;
 
   // Call chat core handler
+  // isOpenAIResponsesClient tells chatCore the inbound client speaks the OpenAI
+  // Responses API even though the converted body is chat-shaped (sourceFormat
+  // detects as plain OpenAI). Without it, chatCore's web_search-fallback
+  // non-streaming forcing never fires on this path: upstream receives stream:true
+  // for a request whose web_search tool was rewritten to the fallback, and a
+  // stream:true client gets a raw SSE upstream stream instead of the assembled
+  // JSON (converted back to SSE below).
   const result = await handleChatCore({
     body: convertedBody,
     modelInfo,
@@ -60,6 +74,7 @@ export async function handleResponsesCore({
     onRequestSuccess,
     onDisconnect,
     clientRawRequest: null,
+    isOpenAIResponsesClient: true,
     connectionId,
     userAgent: null,
     comboName: null,
@@ -77,8 +92,40 @@ export async function handleResponsesCore({
     return result;
   }
 
-  const response = result.response;
-  const contentType = response.headers.get("Content-Type") || "";
+  let response = result.response;
+  let contentType = response.headers.get("Content-Type") || "";
+
+  // If the client requested stream: true, but we got JSON (e.g. because web_search fallback forced stream:false), convert it back to an SSE stream
+  if (
+    originalStreamRequested &&
+    response.status === 200 &&
+    !contentType.includes("text/event-stream")
+  ) {
+    const text = await response.text();
+    const synthesizedStream = synthesizeOpenAiSseFromJson(text);
+    if (synthesizedStream) {
+      const rebuiltHeaders = new Headers(response.headers);
+      rebuiltHeaders.delete("Content-Length");
+      rebuiltHeaders.set("Content-Type", "text/event-stream");
+      response = new Response(synthesizedStream, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: rebuiltHeaders,
+      });
+      contentType = "text/event-stream";
+      // Update result.response so subsequent references are correct if needed
+      result.response = response;
+    } else {
+      // Rebuild consumed body
+      const rebuiltResponse = new Response(text, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+      result.response = rebuiltResponse;
+      return result;
+    }
+  }
 
   // If not SSE or error, return as-is
   if (!contentType.includes("text/event-stream") || response.status !== 200) {

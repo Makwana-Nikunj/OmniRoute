@@ -197,12 +197,7 @@ export default function Header({
   };
 
   return (
-    <header
-      className="sticky top-0 z-10 flex items-center justify-between border-b border-black/5 bg-bg px-8 py-4 dark:border-white/5"
-      style={{
-        paddingTop: isMacElectron ? "calc(1rem + var(--desktop-safe-top))" : undefined,
-      }}
-    >
+    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-black/5 bg-bg px-8 py-4 dark:border-white/5">
       {/* Mobile menu button */}
       <div className="flex items-center gap-3 lg:hidden">
         {showMenuButton && (

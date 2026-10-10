@@ -517,11 +517,9 @@ export function migrateUsageJsonToSqlite() {
 migrateLegacyUsageFiles();
 
 if (shouldPersistToDisk) {
-  try {
-    await archiveLegacyRequestLogs();
-  } catch (error) {
+  void archiveLegacyRequestLogs().catch((error) => {
     console.error("[usageDb] Failed to archive legacy request logs:", (error as Error).message);
-  }
+  });
 
   try {
     migrateUsageJsonToSqlite();

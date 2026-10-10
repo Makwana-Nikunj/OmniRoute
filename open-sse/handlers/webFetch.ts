@@ -17,13 +17,25 @@
  */
 
 import { buildErrorBody, sanitizeErrorMessage } from "../utils/error.ts";
-import { context7Fetch } from "../executors/context7-fetch.ts";
-import { firecrawlFetch } from "../executors/firecrawl-fetch.ts";
+const context7Fetch = async () => ({
+  success: false,
+  status: 400,
+  error: "Context7 fetch provider is retired in this gateway edition",
+});
+const firecrawlFetch = async () => ({
+  success: false,
+  status: 400,
+  error: "Firecrawl fetch provider is retired in this gateway edition",
+});
 import { jinaReaderFetch } from "../executors/jina-reader-fetch.ts";
 import { tavilyFetch } from "../executors/tavily-fetch.ts";
 import { tinyfishFetch } from "../executors/tinyfish-fetch.ts";
 import { nimbleFetch } from "../executors/nimble-fetch.ts";
-import { anysearchFetch } from "../executors/anysearch-fetch.ts";
+const anysearchFetch = async () => ({
+  success: false,
+  status: 400,
+  error: "AnySearch fetch provider is retired in this gateway edition",
+});
 
 export type WebFetchFormat = "markdown" | "html" | "links" | "screenshot";
 
