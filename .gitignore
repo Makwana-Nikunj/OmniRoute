@@ -297,3 +297,4 @@ docker-compose.yml.bak
 # check:install-upgrade work trees (~12 GB, disposable)
 /.install-upgrade/
 .neon
+personal_ai_gateway_requirements.md

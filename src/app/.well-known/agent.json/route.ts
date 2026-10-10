@@ -11,7 +11,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { getFleetSkills } from "@/lib/conductor/fleetSkills";
 import { getBaseUrl } from "@/lib/wellKnown";
 
 const PACKAGE_VERSION = process.env.npm_package_version || "1.8.1";
@@ -23,9 +22,8 @@ const PACKAGE_VERSION = process.env.npm_package_version || "1.8.1";
  * capabilities as an A2A agent.
  */
 export async function GET(request?: NextRequest) {
-  // Conductor PRD RF2: fleet skills from the OmniConductor hub (cached ~60s; [] when
-  // the hub is unset/offline — the card stays valid without the fleet section).
-  const fleetSkills = await getFleetSkills();
+  // The OmniConductor fleet-skills hub was removed with the conductor feature;
+  // the card stays valid without the fleet section (static skills only).
   const baseUrl = getBaseUrl(request);
   const agentCard = {
     name: "OmniRoute AI 网关",
@@ -102,7 +100,6 @@ export async function GET(request?: NextRequest) {
         tags: ["discovery", "capabilities"],
         examples: ["你能做什么？", "列出你的技能", "展示能力"],
       },
-      ...fleetSkills,
     ],
     authentication: {
       schemes: ["api-key"],

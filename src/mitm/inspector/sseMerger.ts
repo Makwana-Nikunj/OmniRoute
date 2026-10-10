@@ -3,20 +3,24 @@
  *
  * SSE parsing uses the WHATWG event-stream algorithm. Response REASSEMBLY is
  * NOT reimplemented here: the OpenAI (chat + Responses), and Anthropic rebuilds
- * delegate to the canonical `open-sse/handlers/sseParser.ts` parsers that also
- * produce the client-visible response (via chatCore/nonStreamingSse), so the
- * inspector can never show a different final message than the proxy returned
- * (#9500 reasoning-summary handling, #3948 terminal-snapshot preference and
- * cancelled/failed/incomplete status mapping all live only in the canonical
- * parsers). Gemini is the exception — no canonical SSE parser exists, so
- * rebuildGemini below is the single implementation.
+ * delegate to the canonical parsers in
+ * `open-sse/handlers/sseReassembly.ts` — the browser-safe split of
+ * `open-sse/handlers/sseParser.ts` (this module runs in the client bundle via
+ * RequestLoggerDetail -> conversationNormalizer, so it must not import the
+ * server-side chain). Those parsers also produce the client-visible response
+ * (via chatCore/nonStreamingSse), so the inspector can never show a different
+ * final message than the proxy returned (#9500 reasoning-summary handling,
+ * #3948 terminal-snapshot preference and cancelled/failed/incomplete status
+ * mapping all live only in the canonical parsers). Gemini is the exception —
+ * no canonical SSE parser exists, so rebuildGemini below is the single
+ * implementation.
  */
 
 import {
   parseSSEToClaudeResponse,
   parseSSEToOpenAIResponse,
   parseSSEToResponsesOutput,
-} from "@omniroute/open-sse/handlers/sseParser.ts";
+} from "@omniroute/open-sse/handlers/sseReassembly.ts";
 
 export type ApiFormat = "anthropic" | "openai" | "gemini" | "unknown";
 

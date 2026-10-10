@@ -224,11 +224,6 @@
       "count": 1
     }
   },
-  "open-sse/handlers/sseParser.ts": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "open-sse/handlers/videoGeneration.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -2158,11 +2153,6 @@
       "count": 1
     }
   },
-  "tests/unit/acp-agents-route.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
   "tests/unit/adaptive-admission-runtime.test.ts": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -2192,11 +2182,6 @@
     }
   },
   "tests/unit/agent-bridge-mappings-sync-8656.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/agent-skills-page.test.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
@@ -2576,306 +2561,6 @@
       "count": 1
     }
   },
-  "tests/unit/cli-a2a-invoke-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 16
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-audit-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 15
-    }
-  },
-  "tests/unit/cli-batches-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 16
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 3
-    }
-  },
-  "tests/unit/cli-chat.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 17
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 3
-    }
-  },
-  "tests/unit/cli-cloud-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 18
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 6
-    }
-  },
-  "tests/unit/cli-combo-suggest-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 14
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-completion-dynamic.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 11
-    }
-  },
-  "tests/unit/cli-compression-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 20
-    }
-  },
-  "tests/unit/cli-context-eng-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 19
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-cost.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 16
-    }
-  },
-  "tests/unit/cli-eval-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 22
-    }
-  },
-  "tests/unit/cli-expanded-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-files-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 12
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-helper/config-generator.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-helper/hermes-home-env.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-lang-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-mcp-call-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 10
-    }
-  },
-  "tests/unit/cli-memory-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 18
-    }
-  },
-  "tests/unit/cli-memory-types.test.mjs": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 4
-    }
-  },
-  "tests/unit/cli-nodes-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 15
-    }
-  },
-  "tests/unit/cli-oauth-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 20
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-oneproxy-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 13
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-open-command.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-openapi-codegen.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-openapi-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 6
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-plugin-system.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-policy-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 20
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 3
-    }
-  },
-  "tests/unit/cli-pricing-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 16
-    }
-  },
-  "tests/unit/cli-process-supervisor.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 6
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-program.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 4
-    }
-  },
-  "tests/unit/cli-providers-metrics.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 15
-    }
-  },
-  "tests/unit/cli-redis-command.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-remote-mode.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 5
-    }
-  },
-  "tests/unit/cli-resilience-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 16
-    }
-  },
-  "tests/unit/cli-runtime-extended.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-serve-stop-command.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-server-commands.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-sessions-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 12
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-simulate.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 13
-    }
-  },
-  "tests/unit/cli-skills-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 16
-    }
-  },
-  "tests/unit/cli-stop-supervisor-respawn-9455.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-stream.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 13
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-sync-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 21
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-tags-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 17
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/cli-telemetry-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 6
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/cli-translator-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 16
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 3
-    }
-  },
-  "tests/unit/cli-usage.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 17
-    }
-  },
-  "tests/unit/cli-webhooks-commands.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 23
-    }
-  },
   "tests/unit/cli/alias-resolver-7791.test.ts": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -2889,11 +2574,6 @@
   "tests/unit/cli/setup-continue.test.ts": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    }
-  },
-  "tests/unit/cliproxyapi-executor.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 3
     }
   },
   "tests/unit/cloud-agent-cursor-4227.test.ts": {
@@ -3177,16 +2857,6 @@
       "count": 2
     }
   },
-  "tests/unit/conductor-agent-card.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/conductor-ask-route.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "tests/unit/context-manager.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 10
@@ -3288,11 +2958,6 @@
   "tests/unit/db-domainState-crud.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 5
-    }
-  },
-  "tests/unit/db-gamification-federation-3500.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
     }
   },
   "tests/unit/db-health-check.test.ts": {
@@ -3425,11 +3090,6 @@
   "tests/unit/display-and-error-utils.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 4
-    }
-  },
-  "tests/unit/dns-config-generic.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "tests/unit/domain-branch-hardening.test.ts": {
@@ -3607,16 +3267,6 @@
       "count": 1
     }
   },
-  "tests/unit/gamification/events.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "tests/unit/gamification/leaderboard.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    }
-  },
   "tests/unit/gemini-business-provider.test.ts": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -3758,11 +3408,6 @@
   "tests/unit/lib/warmupScheduler/redisCircuitBreakerStore.test.ts": {
     "@typescript-eslint/no-unused-vars": {
       "count": 3
-    }
-  },
-  "tests/unit/llamacpp-model-delete.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "tests/unit/lmarena-split-cookie-4271.test.ts": {
@@ -4336,31 +3981,6 @@
       "count": 1
     }
   },
-  "tests/unit/radar-api-routes.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/radar-apply-feed.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/radar-db.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 5
-    }
-  },
-  "tests/unit/radar-referrals-sync.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/radar-sync.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
   "tests/unit/rate-limit-enhanced.test.ts": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -4636,26 +4256,6 @@
       "count": 1
     }
   },
-  "tests/unit/skills-collect-routes.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "tests/unit/skills-registry.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "tests/unit/skills-routes.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 9
-    }
-  },
-  "tests/unit/skills-skillssh.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 7
-    }
-  },
   "tests/unit/spend-batch-writer.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -4840,11 +4440,6 @@
   },
   "tests/unit/translator-claude-to-openai.test.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "tests/unit/translator-friendly-page-client.test.tsx": {
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
@@ -5155,11 +4750,6 @@
   "tests/unit/web-session-pool-health.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 2
-    }
-  },
-  "tests/unit/webhook-abort-timer-cleanup.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 5
     }
   },
   "tests/unit/xiaomi-providers-registry.test.ts": {
