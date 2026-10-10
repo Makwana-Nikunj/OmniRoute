@@ -570,7 +570,7 @@ async function saveCallLogOperation(entry: any): Promise<void> {
         combo_name, combo_step_id, combo_execution_key, error_summary, detail_state,
         artifact_relpath, artifact_size_bytes, artifact_sha256,
         has_request_body, has_response_body, has_pipeline_details, request_summary,
-        correlation_id, model_pinned, session_tag, response_id, error_type
+        correlation_id, model_pinned, session_tag, response_id, error_type, project_id
       )
       VALUES (
         @id, @timestamp, @method, @path, @status, @model, @requestedModel, @provider,
@@ -581,11 +581,12 @@ async function saveCallLogOperation(entry: any): Promise<void> {
         @comboName, @comboStepId, @comboExecutionKey, @errorSummary, @detailState,
         @artifactRelPath, @artifactSizeBytes, @artifactSha256,
         @hasRequestBody, @hasResponseBody, @hasPipelineDetails, @requestSummary,
-        @correlationId, @modelPinned, @sessionTag, @responseId, @errorType
+        @correlationId, @modelPinned, @sessionTag, @responseId, @errorType, @projectId
       )
     `
     ).run({
       ...logEntry,
+      projectId: logEntry.projectId ?? logEntry.project_id ?? null,
       errorSummary: toStoredErrorSummary(protectedError),
       detailState,
       artifactRelPath,
@@ -719,6 +720,10 @@ export async function getCallLogs(filter: any = {}) {
   pushLikeFilter(conditions, params, "session_tag", "sessionTag", filter.sessionTag);
   if (filter.combo) {
     conditions.push("cl.combo_name IS NOT NULL");
+  }
+  if (filter.projectId) {
+    conditions.push("cl.project_id = @projectId");
+    params.projectId = filter.projectId;
   }
   if (filter.excludeTests) {
     // Home "Recent Requests" is an allowlist of real provider inference, not a

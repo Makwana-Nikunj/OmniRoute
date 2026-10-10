@@ -366,7 +366,10 @@ export function trackPendingRequest(
       pendingRequests.details[connectionId][modelKey].push(newDetail);
       pendingById.set(newDetail.id, newDetail);
       if (normalizedMetadata.correlationId) {
-        pendingIdByCorrelation.set(normalizedMetadata.correlationId, { id: newDetail.id, touchedAt: now });
+        pendingIdByCorrelation.set(normalizedMetadata.correlationId, {
+          id: newDetail.id,
+          touchedAt: now,
+        });
       }
       return newDetail.id;
     } else if (!started && nextCount >= 0) {
@@ -752,8 +755,8 @@ export async function saveRequestUsage(entry: UsageEntry) {
         INSERT INTO usage_history (provider, model, connection_id, account_key, account_label,
           account_label_priority, api_key_id, api_key_name, tokens_input, tokens_output,
           tokens_cache_read, tokens_cache_creation, tokens_reasoning, service_tier, status, success,
-          latency_ms, ttft_ms, error_code, combo_strategy, endpoint, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          latency_ms, ttft_ms, error_code, combo_strategy, endpoint, timestamp, project_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       ).run(
         entry.provider || null,
@@ -781,7 +784,8 @@ export async function saveRequestUsage(entry: UsageEntry) {
         entry.errorCode || null,
         entry.comboStrategy || entry.combo_strategy || null,
         entry.endpoint || null,
-        timestamp
+        timestamp,
+        entry.projectId || entry.project_id || null
       );
 
       inserted = true;

@@ -367,6 +367,7 @@ export const createComboSchema = z
       .regex(/^\d+$/, "dimensions must be a positive integer string")
       .optional()
       .nullable(),
+    projectId: z.string().trim().max(100).optional().nullable(),
   })
   .superRefine(validateQuotaOnlyComboRefs);
 
@@ -432,6 +433,7 @@ export const updateComboSchema = z
       .regex(/^\d+$/, "dimensions must be a positive integer string")
       .optional()
       .nullable(),
+    projectId: z.string().trim().max(100).optional().nullable(),
   })
   .superRefine((value, ctx) => {
     if (
@@ -448,7 +450,8 @@ export const updateComboSchema = z
       value.context_cache_protection === undefined &&
       value.context_length === undefined &&
       value.compressionOverride === undefined &&
-      value.dimensions === undefined
+      value.dimensions === undefined &&
+      value.projectId === undefined
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

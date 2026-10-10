@@ -104,6 +104,9 @@ function parseComboRow(row: unknown): JsonRecord | null {
     }
     // Column is 0 — keep existing JSON blob value
   }
+  if (record.project_id !== undefined && record.project_id !== null) {
+    parsed.projectId = record.project_id;
+  }
   return parsed;
 }
 
@@ -117,7 +120,7 @@ function getNextSortOrder() {
 export async function getCombos(limit?: number, offset?: number) {
   const db = getDbInstance();
   let sql =
-    "SELECT id, data, sort_order, context_cache_protection FROM combos ORDER BY sort_order ASC, name COLLATE NOCASE ASC";
+    "SELECT id, data, sort_order, context_cache_protection, project_id FROM combos ORDER BY sort_order ASC, name COLLATE NOCASE ASC";
   const params: unknown[] = [];
   if (limit !== undefined) {
     sql += " LIMIT ? OFFSET ?";
@@ -149,7 +152,9 @@ export function getCombosCount(): number {
 export async function getComboById(id: string) {
   const db = getDbInstance();
   const row = db
-    .prepare("SELECT id, data, sort_order, context_cache_protection FROM combos WHERE id = ?")
+    .prepare(
+      "SELECT id, data, sort_order, context_cache_protection, project_id FROM combos WHERE id = ?"
+    )
     .get(id);
   const combo = parseComboRow(row);
   if (!combo) return null;
@@ -159,7 +164,9 @@ export async function getComboById(id: string) {
 export async function getComboByName(name: string) {
   const db = getDbInstance();
   const row = db
-    .prepare("SELECT id, data, sort_order, context_cache_protection FROM combos WHERE name = ?")
+    .prepare(
+      "SELECT id, data, sort_order, context_cache_protection, project_id FROM combos WHERE name = ?"
+    )
     .get(name);
   const combo = parseComboRow(row);
   if (!combo) return null;
@@ -175,7 +182,7 @@ export async function getComboByNameInsensitive(name: string) {
   const db = getDbInstance();
   const row = db
     .prepare(
-      "SELECT id, data, sort_order, context_cache_protection FROM combos WHERE name = ? COLLATE NOCASE"
+      "SELECT id, data, sort_order, context_cache_protection, project_id FROM combos WHERE name = ? COLLATE NOCASE"
     )
     .get(name);
   const combo = parseComboRow(row);
@@ -208,9 +215,10 @@ export async function createCombo(data: JsonRecord) {
 
   validateComboInvariant(combo);
   const contextCache = data.context_cache_protection ? 1 : 0;
+  const projectId = typeof combo.projectId === "string" ? combo.projectId : null;
   db.prepare(
-    "INSERT INTO combos (id, name, data, sort_order, created_at, updated_at, context_cache_protection) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(combo.id, combo.name, JSON.stringify(combo), sortOrder, now, now, contextCache);
+    "INSERT INTO combos (id, name, data, sort_order, created_at, updated_at, context_cache_protection, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(combo.id, combo.name, JSON.stringify(combo), sortOrder, now, now, contextCache, projectId);
 
   return combo;
 }
@@ -218,7 +226,9 @@ export async function createCombo(data: JsonRecord) {
 export async function updateCombo(id: string, data: JsonRecord): Promise<ComboUpdateResult | null> {
   const db = getDbInstance();
   const existing = db
-    .prepare("SELECT id, data, sort_order, context_cache_protection FROM combos WHERE id = ?")
+    .prepare(
+      "SELECT id, data, sort_order, context_cache_protection, project_id FROM combos WHERE id = ?"
+    )
     .get(id);
   if (!existing) return null;
 
@@ -255,15 +265,24 @@ export async function updateCombo(id: string, data: JsonRecord): Promise<ComboUp
     models: normalizedMerged.models,
   });
   const contextCacheProtection = normalizedMerged.context_cache_protection ? 1 : 0;
+  const projectId =
+    data.projectId !== undefined
+      ? typeof data.projectId === "string"
+        ? data.projectId
+        : null
+      : typeof normalizedMerged.projectId === "string"
+        ? normalizedMerged.projectId
+        : null;
 
   db.prepare(
-    "UPDATE combos SET name = ?, data = ?, sort_order = ?, updated_at = ?, context_cache_protection = ? WHERE id = ?"
+    "UPDATE combos SET name = ?, data = ?, sort_order = ?, updated_at = ?, context_cache_protection = ?, project_id = ? WHERE id = ?"
   ).run(
     nextName,
     JSON.stringify(normalizedMerged),
     sortOrder,
     normalizedMerged.updatedAt,
     contextCacheProtection,
+    projectId,
     id
   );
 
