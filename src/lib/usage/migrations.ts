@@ -517,9 +517,15 @@ export function migrateUsageJsonToSqlite() {
 migrateLegacyUsageFiles();
 
 if (shouldPersistToDisk) {
-  void archiveLegacyRequestLogs().catch((error) => {
+  // Blocking on purpose: archiveLegacyRequestLogs() zips and then DELETES the
+  // legacy log tree. Running it fire-and-forget raced migrateUsageJsonToSqlite()
+  // and live log writers during boot, and a SIGTERM mid-delete left a partially
+  // deleted tree with no completion marker (re-run on next boot).
+  try {
+    await archiveLegacyRequestLogs();
+  } catch (error) {
     console.error("[usageDb] Failed to archive legacy request logs:", (error as Error).message);
-  });
+  }
 
   try {
     migrateUsageJsonToSqlite();

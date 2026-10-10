@@ -1,83 +1,67 @@
+import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { describe, test } from "node:test";
-import {
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-memory-settings-"));
+process.env.DATA_DIR = TEST_DATA_DIR;
+
+const {
   DEFAULT_MEMORY_SETTINGS,
+  getMemorySettings,
+  invalidateMemorySettingsCache,
   normalizeMemorySettings,
-  toMemoryRetrievalConfig,
   toMemorySettingsUpdates,
-} from "../../src/lib/memory/settings.ts";
+} = await import("../../src/lib/memory/settings.ts");
+const { updateSettings } = await import("../../src/lib/db/settings.ts");
+const { resetDbInstance } = await import("../../src/lib/db/core.ts");
 
-describe("memory settings helpers", () => {
-  test("normalizeMemorySettings applies defaults and clamps persisted values", () => {
-    const settings = normalizeMemorySettings({
-      memoryEnabled: "yes",
-      memoryMaxTokens: 20001,
-      memoryRetentionDays: 0,
-      memoryStrategy: "unsupported",
-      skillsEnabled: true,
-    });
-
-    assert.deepEqual(settings, {
-      enabled: DEFAULT_MEMORY_SETTINGS.enabled,
-      maxTokens: 16000,
-      retentionDays: 1,
-      strategy: DEFAULT_MEMORY_SETTINGS.strategy,
-      skillsEnabled: true,
-      // Plan 21 — Memory Engine Redesign extended fields (default values)
-      embeddingSource: DEFAULT_MEMORY_SETTINGS.embeddingSource,
-      embeddingProviderModel: DEFAULT_MEMORY_SETTINGS.embeddingProviderModel,
-      // #10010 — custom remote embedding endpoint fields (default values)
-      customBaseUrl: DEFAULT_MEMORY_SETTINGS.customBaseUrl,
-      customModelId: DEFAULT_MEMORY_SETTINGS.customModelId,
-      transformersEnabled: DEFAULT_MEMORY_SETTINGS.transformersEnabled,
-      staticEnabled: DEFAULT_MEMORY_SETTINGS.staticEnabled,
-      rerankEnabled: DEFAULT_MEMORY_SETTINGS.rerankEnabled,
-      rerankProviderModel: DEFAULT_MEMORY_SETTINGS.rerankProviderModel,
-      vectorStore: DEFAULT_MEMORY_SETTINGS.vectorStore,
-      // Phase 1-2: MemoryBackend provider pattern
-      primaryBackend: DEFAULT_MEMORY_SETTINGS.primaryBackend,
-      fallbackBackends: DEFAULT_MEMORY_SETTINGS.fallbackBackends,
-      backendConfigs: DEFAULT_MEMORY_SETTINGS.backendConfigs,
-    });
+describe("memory settings", () => {
+  test("normalizeMemorySettings falls back to defaults for missing keys", () => {
+    const settings = normalizeMemorySettings({});
+    assert.equal(settings.enabled, DEFAULT_MEMORY_SETTINGS.enabled);
+    assert.equal(settings.retentionDays, DEFAULT_MEMORY_SETTINGS.retentionDays);
+    assert.equal(settings.maxTokens, DEFAULT_MEMORY_SETTINGS.maxTokens);
   });
 
-  test("toMemorySettingsUpdates maps UI fields to persisted keys", () => {
-    assert.deepEqual(
-      toMemorySettingsUpdates({
-        enabled: false,
-        maxTokens: 4096,
-        retentionDays: 21,
-        strategy: "hybrid",
-        skillsEnabled: true,
-      }),
-      {
-        memoryEnabled: false,
-        memoryMaxTokens: 4096,
-        memoryRetentionDays: 21,
-        memoryStrategy: "hybrid",
-        skillsEnabled: true,
-      }
-    );
+  test("getMemorySettings returns the persisted retention, not the hardcoded default", async () => {
+    // Regression: the lean-gateway stub returned DEFAULT_MEMORY_SETTINGS
+    // unconditionally, so the destructive Qdrant retention cleanup
+    // (POST /api/settings/qdrant/cleanup) deleted points older than the
+    // hardcoded 30 days instead of the operator-configured window.
+    await updateSettings({ memoryRetentionDays: 90 });
+    invalidateMemorySettingsCache();
+
+    const settings = await getMemorySettings();
+    assert.equal(settings.retentionDays, 90);
   });
 
-  test("toMemoryRetrievalConfig disables injection when memory is off and remaps recent strategy", () => {
-    assert.deepEqual(
-      toMemoryRetrievalConfig({
-        enabled: true,
-        maxTokens: 0,
-        retentionDays: 10,
-        strategy: "recent",
-        skillsEnabled: false,
-      }),
-      {
-        enabled: false,
-        maxTokens: 0,
-        retrievalStrategy: "exact",
-        autoSummarize: false,
-        persistAcrossModels: false,
-        retentionDays: 10,
-        scope: "apiKey",
-      }
-    );
+  test("invalidateMemorySettingsCache re-reads persisted values", async () => {
+    await updateSettings({ memoryRetentionDays: 15 });
+    invalidateMemorySettingsCache();
+    assert.equal((await getMemorySettings()).retentionDays, 15);
+
+    await updateSettings({ memoryRetentionDays: 60 });
+    invalidateMemorySettingsCache();
+    assert.equal((await getMemorySettings()).retentionDays, 60);
   });
+
+  test("toMemorySettingsUpdates round-trips through normalizeMemorySettings", () => {
+    const updates = toMemorySettingsUpdates({ retentionDays: 45, strategy: "recent" });
+    const normalized = normalizeMemorySettings(updates);
+    assert.equal(normalized.retentionDays, 45);
+    assert.equal(normalized.strategy, "recent");
+  });
+
+  test("out-of-range values are clamped to the documented bounds", () => {
+    assert.equal(normalizeMemorySettings({ memoryRetentionDays: 0 }).retentionDays, 1);
+    assert.equal(normalizeMemorySettings({ memoryRetentionDays: 9999 }).retentionDays, 365);
+  });
+});
+
+test.after(async () => {
+  invalidateMemorySettingsCache();
+  resetDbInstance();
+  fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });

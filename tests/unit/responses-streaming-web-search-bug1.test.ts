@@ -111,3 +111,65 @@ test("Bug 1: web_search fallback requested with stream: true returns correctly s
   assert.ok(text.includes("response.completed"), "Should contain response.completed event");
   assert.ok(text.includes("Web search result content"), "Stream should carry the content");
 });
+
+test("Bug 1 follow-up: web_search fallback with stream:false is NOT forced non-streaming", async () => {
+  // Regression: the non-streaming forcing must only apply to clients that asked
+  // for a stream. A stream:false Responses client must keep the pre-existing
+  // contract (upstream streams, handler emits SSE) instead of receiving an
+  // OpenAI chat-completions JSON body from /v1/responses.
+  const chunks = [
+    {
+      id: "chatcmpl-bug1b",
+      object: "chat.completion.chunk",
+      choices: [
+        {
+          index: 0,
+          delta: { role: "assistant", content: "Web search result content" },
+          finish_reason: null,
+        },
+      ],
+    },
+    {
+      id: "chatcmpl-bug1b",
+      object: "chat.completion.chunk",
+      choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+    },
+  ];
+
+  globalThis.fetch = async (req: string | URL | Request, init?: RequestInit) => {
+    const r = req instanceof Request ? req : new Request(req, init);
+    if (!r.url.includes("/chat/completions")) {
+      return new Response(JSON.stringify({ error: "not found" }), { status: 404 });
+    }
+    const body = JSON.parse((await r.text()) || "{}");
+    // stream:false clients must NOT be forced non-streaming by the fallback
+    assert.equal(body.stream, true, "stream:false client must still stream upstream");
+    const sse =
+      chunks.map((c) => `data: ${JSON.stringify(c)}`).join("\n\n") + "\n\ndata: [DONE]\n\n";
+    return new Response(sse, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  };
+
+  const result = await handleResponsesCore({
+    body: {
+      model: "openai/gpt-4",
+      stream: false,
+      tools: [{ type: "web_search" }],
+      input: [
+        { type: "message", role: "user", content: [{ type: "input_text", text: "search query" }] },
+      ],
+    },
+    modelInfo: { provider: "openai", model: "gpt-4" },
+    credentials: { "openai:apiKey": "test" },
+    log: noopLog(),
+    onCredentialsRefreshed: () => {},
+    onRequestSuccess: () => {},
+    onDisconnect: () => {},
+    connectionId: "test",
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(result.success, true);
+  const response = result.response as Response;
+  const cType = response.headers.get("content-type") || "";
+  assert.ok(cType.includes("text/event-stream"), `stream:false client must get SSE, got ${cType}`);
+});

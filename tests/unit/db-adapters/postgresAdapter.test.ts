@@ -1,6 +1,10 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { convertSql, splitSqlStatements } from "../../../src/lib/db/adapters/postgresAdapter";
+import {
+  convertSql,
+  normalizeQueryParams,
+  splitSqlStatements,
+} from "../../../src/lib/db/adapters/postgresAdapter";
 
 describe("postgresAdapter SQL conversion", () => {
   test("converts INTEGER PRIMARY KEY AUTOINCREMENT to SERIAL PRIMARY KEY", () => {
@@ -107,6 +111,47 @@ describe("postgresAdapter SQL conversion", () => {
     const sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=$1";
     assert.ok(convertSql(sql).includes("information_schema.tables"));
     assert.ok(convertSql(sql).includes("table_name = $1"));
+  });
+
+  test("converts COLLATE NOCASE equality to LOWER comparison", () => {
+    // getComboByNameInsensitive (#4446 lowercased-slug lookup) relies on this
+    const sql = "SELECT id FROM combos WHERE name = ? COLLATE NOCASE";
+    const converted = convertSql(sql);
+    assert.ok(converted.includes("LOWER(name) = LOWER($1)"), converted);
+    assert.ok(!converted.includes("COLLATE"));
+  });
+
+  test("converts COLLATE NOCASE ordering to LOWER", () => {
+    const sql = "SELECT id FROM combos ORDER BY sort_order ASC, name COLLATE NOCASE ASC";
+    const converted = convertSql(sql);
+    assert.ok(converted.includes("LOWER(name) ASC"), converted);
+    assert.ok(!converted.includes("COLLATE"));
+  });
+});
+
+describe("postgresAdapter normalizeQueryParams", () => {
+  test("keeps PostgreSQL :: casts intact while binding @named params", () => {
+    const sql = "SELECT data::jsonb->>'k' FROM t WHERE id = @id";
+    const { sql: converted, params } = normalizeQueryParams(sql, [{ id: 7 }]);
+    assert.equal(converted, "SELECT data::jsonb->>'k' FROM t WHERE id = $1");
+    assert.deepEqual(params, [7]);
+  });
+
+  test("keeps ::timestamp casts produced by the datetime(column) rule", () => {
+    // Real trigger: convertSql rewrites datetime(timestamp) to a ::timestamp cast,
+    // then getAuditLog binds named params — the cast must survive binding.
+    const converted = convertSql(
+      "SELECT * FROM config_audit_log ORDER BY datetime(timestamp) DESC LIMIT @limit OFFSET @offset"
+    );
+    const bound = normalizeQueryParams(converted, [{ limit: 10, offset: 5 }]);
+    assert.ok(bound.sql.includes("::timestamp"), bound.sql);
+    assert.deepEqual(bound.params, [10, 5]);
+  });
+
+  test("does not treat a leading colon-only token as a parameter", () => {
+    const { sql: converted, params } = normalizeQueryParams("SELECT 1::int AS x", [{}]);
+    assert.equal(converted, "SELECT 1::int AS x");
+    assert.deepEqual(params, []);
   });
 });
 

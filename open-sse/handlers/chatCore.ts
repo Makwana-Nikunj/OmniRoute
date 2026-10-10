@@ -455,7 +455,7 @@ import { isLocalStreamLifecycleError } from "@/shared/utils/circuitBreaker";
 import { shouldIsolateProbeFailures } from "@/shared/utils/probeOrigin";
 import { writeTerminalStatus } from "@/shared/utils/terminalStatus";
 import { extractFacts } from "@/lib/memory/extraction";
-import { handleToolCallExecution } from "@/lib/skills/interception";
+import { handleToolCallExecution, canExecuteBuiltinTool } from "@/lib/skills/interception";
 import { MEMORY_BUILTIN_TOOL_NAMES } from "@/lib/skills/memoryBuiltins";
 import { OMNIROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
 import { resolveProviderId } from "@/shared/constants/providers";
@@ -547,11 +547,13 @@ export async function handleChatCore({
   managedLease = null,
   // Set by callers that serve the OpenAI Responses API on a chat-shaped body
   // (handleResponsesCore converts Responses→Chat before delegating here, so
-  // sourceFormat detects as plain OpenAI). Opt-in and read ONLY by the
-  // web_search-fallback non-streaming forcing below — it deliberately does not
-  // feed resolveChatCoreRequestFormat/clientResponseFormat, which must keep
+  // sourceFormat detects as plain OpenAI). Carries the CLIENT's stream flag:
+  // the web_search-fallback non-streaming forcing below must only fire for
+  // clients that actually requested a stream. Opt-in and read ONLY by that
+  // forcing condition — it deliberately does not feed
+  // resolveChatCoreRequestFormat/clientResponseFormat, which must keep
   // following the real endpoint/body detection.
-  isOpenAIResponsesClient = false,
+  responsesStreamRequested = false,
   // #12150 P1b: additive, optional video-bridge log/Memory shadow — shape is
   // VideoBridgeLogParam (defined near the top of this file). Built once in chat.ts from
   // preCallGuardrails.results (video-bridge guardrail meta) and threaded here
@@ -962,7 +964,12 @@ export async function handleChatCore({
       nativeCodexPassthrough: nativeResponsesPassthrough,
       interceptSearchOverride,
     });
-  if (webSearchFallbackPlan.enabled) {
+  // Only rewrite a native tool into its synthetic fallback form when the lean
+  // gateway can actually EXECUTE that fallback (canExecuteBuiltinTool).
+  // Rewriting without an executor strands the model's tool call in the final
+  // response — nothing would ever run it.
+  const webSearchFallbackExecutable = canExecuteBuiltinTool(webSearchFallbackPlan.toolName ?? "");
+  if (webSearchFallbackPlan.enabled && webSearchFallbackExecutable) {
     body = bodyWithWebSearchFallback as typeof body;
     // Server-side web-search execution cannot be injected into an arbitrary
     // client SSE stream (streaming interception is not implemented — #9725), so
@@ -971,7 +978,7 @@ export async function handleChatCore({
     // carries the executed results (function_call_output + web_search_call) and
     // JSON-tolerating Responses clients (pi-web-access) consume it directly.
     if (
-      (sourceFormat === FORMATS.OPENAI_RESPONSES || isOpenAIResponsesClient) &&
+      (sourceFormat === FORMATS.OPENAI_RESPONSES || responsesStreamRequested) &&
       (body as Record<string, unknown>).stream === true
     ) {
       (body as Record<string, unknown>).stream = false;
@@ -993,7 +1000,8 @@ export async function handleChatCore({
       nativeCodexPassthrough: nativeResponsesPassthrough,
       interceptFetchOverride,
     });
-  if (webFetchFallbackPlan.enabled) {
+  const webFetchFallbackExecutable = canExecuteBuiltinTool(webFetchFallbackPlan.toolName ?? "");
+  if (webFetchFallbackPlan.enabled && webFetchFallbackExecutable) {
     body = bodyWithWebFetchFallback as typeof body;
     log?.info?.(
       "TOOLS",
@@ -5179,8 +5187,8 @@ export async function handleChatCore({
     const customSkillExecutionEnabled =
       Boolean(memoryOwnerId) && memorySettings?.skillsEnabled === true;
     const builtinToolNames = [
-      webSearchFallbackPlan.toolName,
-      webFetchFallbackPlan.toolName,
+      webSearchFallbackExecutable ? webSearchFallbackPlan.toolName : null,
+      webFetchFallbackExecutable ? webFetchFallbackPlan.toolName : null,
       ...(memoryOwnerId && memorySettings?.enabled ? MEMORY_BUILTIN_TOOL_NAMES : []),
     ].filter((name): name is string => Boolean(name));
     if (customSkillExecutionEnabled || builtinToolNames.length > 0) {

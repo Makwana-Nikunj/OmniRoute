@@ -58,13 +58,15 @@ export async function handleResponsesCore({
   convertedBody.stream = true;
 
   // Call chat core handler
-  // isOpenAIResponsesClient tells chatCore the inbound client speaks the OpenAI
-  // Responses API even though the converted body is chat-shaped (sourceFormat
-  // detects as plain OpenAI). Without it, chatCore's web_search-fallback
-  // non-streaming forcing never fires on this path: upstream receives stream:true
-  // for a request whose web_search tool was rewritten to the fallback, and a
-  // stream:true client gets a raw SSE upstream stream instead of the assembled
-  // JSON (converted back to SSE below).
+  // responsesStreamRequested tells chatCore the inbound client speaks the OpenAI
+  // Responses API (the converted body is chat-shaped, so sourceFormat detects as
+  // plain OpenAI) AND carries the client's stream flag, so the web_search-fallback
+  // non-streaming forcing only fires for stream:true clients. Without it that
+  // forcing never fires on this path: upstream receives stream:true for a request
+  // whose web_search tool was rewritten to the fallback, and a stream:true client
+  // gets a raw upstream SSE stream instead of the assembled JSON (converted back
+  // to SSE below). stream:false clients must NOT be forced non-streaming — they
+  // keep the pre-existing SSE contract.
   const result = await handleChatCore({
     body: convertedBody,
     modelInfo,
@@ -74,7 +76,7 @@ export async function handleResponsesCore({
     onRequestSuccess,
     onDisconnect,
     clientRawRequest: null,
-    isOpenAIResponsesClient: true,
+    responsesStreamRequested: originalStreamRequested,
     connectionId,
     userAgent: null,
     comboName: null,

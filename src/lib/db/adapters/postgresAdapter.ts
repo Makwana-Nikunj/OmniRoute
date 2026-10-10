@@ -120,7 +120,12 @@ export function convertSql(sql: string): string {
       "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
     ],
     ["IFNULL", /\bIFNULL\s*\(/gi, "COALESCE("],
-    ["COLLATE NOCASE", /\s+COLLATE\s+NOCASE\b/gi, ""],
+    [
+      "COLLATE NOCASE (equality)",
+      /([a-zA-Z0-9_.]+)\s*=\s*(\$\d+)\s+COLLATE\s+NOCASE\b/gi,
+      "LOWER($1) = LOWER($2)",
+    ],
+    ["COLLATE NOCASE (order)", /([a-zA-Z0-9_.]+)\s+COLLATE\s+NOCASE\b/gi, "LOWER($1)"],
     [
       "datetime('now') parens",
       /\(\s*datetime\s*\(\s*'now'\s*\)\s*\)/gi,
@@ -485,7 +490,10 @@ function isPlainObject(obj: unknown): obj is Record<string, unknown> {
   );
 }
 
-function normalizeQueryParams(sql: string, args: unknown[]): { sql: string; params: unknown[] } {
+export function normalizeQueryParams(
+  sql: string,
+  args: unknown[]
+): { sql: string; params: unknown[] } {
   const first = args[0];
   const hasNamed = /[@:][a-zA-Z0-9_]+/.test(sql);
 
@@ -510,7 +518,14 @@ function normalizeQueryParams(sql: string, args: unknown[]): { sql: string; para
         continue;
       }
 
-      if (!inString && (char === "@" || char === ":") && /[a-zA-Z_]/.test(sql[i + 1] || "")) {
+      // Skip "::" casts (e.g. to_char((t)::timestamp, ...)): the SECOND colon is
+      // followed by a type letter, so without this guard the cast is consumed as
+      // a named parameter — corrupting the SQL and shifting every later binding.
+      if (
+        !inString &&
+        (char === "@" || (char === ":" && sql[i - 1] !== ":")) &&
+        /[a-zA-Z_]/.test(sql[i + 1] || "")
+      ) {
         const rest = sql.slice(i + 1);
         const match = rest.match(/^[a-zA-Z0-9_]+/);
         if (match) {

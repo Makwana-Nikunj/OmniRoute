@@ -1,6 +1,14 @@
 /**
- * Memory settings — stubs for lean gateway
+ * Memory settings — persisted reader for the lean gateway.
+ *
+ * Reads the flat `memory*` keys from the settings table (same keys the
+ * /api/settings/memory PUT route writes) and merges them over
+ * DEFAULT_MEMORY_SETTINGS. Restored from the pre-lean-gateway implementation
+ * (git 0642cfc70^) because the stub version returned defaults unconditionally,
+ * which made the destructive Qdrant retention cleanup use the hardcoded 30-day
+ * default instead of the operator-configured window.
  */
+import { getSettings } from "@/lib/db/settings";
 
 export interface MemorySettings {
   enabled: boolean;
@@ -42,15 +50,174 @@ export const DEFAULT_MEMORY_SETTINGS: MemorySettings = {
   backendConfigs: {},
 };
 
-export async function getMemorySettings(): Promise<MemorySettings> {
-  return DEFAULT_MEMORY_SETTINGS;
+let cachedMemorySettings: MemorySettings | null = null;
+
+function toBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
-export function invalidateMemorySettingsCache(): void {}
+function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(Math.max(Math.round(value), min), max);
+}
+
+function normalizeStrategy(value: unknown): MemorySettings["strategy"] {
+  return value === "recent" || value === "semantic" || value === "hybrid"
+    ? value
+    : DEFAULT_MEMORY_SETTINGS.strategy;
+}
+
+function normalizeEmbeddingSource(value: unknown): MemorySettings["embeddingSource"] {
+  return value === "remote" || value === "static" || value === "transformers" || value === "auto"
+    ? value
+    : DEFAULT_MEMORY_SETTINGS.embeddingSource;
+}
+
+function normalizeVectorStore(value: unknown): MemorySettings["vectorStore"] {
+  return value === "sqlite-vec" || value === "qdrant" || value === "auto"
+    ? value
+    : DEFAULT_MEMORY_SETTINGS.vectorStore;
+}
+
+function normalizeNullableString(value: unknown, fallback: string | null): string | null {
+  if (value === null || value === undefined) return fallback;
+  return typeof value === "string" && value.length > 0 ? value : fallback;
+}
+
+function normalizeCustomString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeCustomBaseUrl(value: unknown): string | null {
+  const normalized = normalizeCustomString(value);
+  return normalized ? normalized.replace(/\/+$/, "") : null;
+}
+
+export function normalizeMemorySettings(rawSettings: Record<string, unknown> = {}): MemorySettings {
+  return {
+    enabled: toBoolean(rawSettings.memoryEnabled, DEFAULT_MEMORY_SETTINGS.enabled),
+    maxTokens: clampInteger(
+      rawSettings.memoryMaxTokens,
+      DEFAULT_MEMORY_SETTINGS.maxTokens,
+      0,
+      16000
+    ),
+    retentionDays: clampInteger(
+      rawSettings.memoryRetentionDays,
+      DEFAULT_MEMORY_SETTINGS.retentionDays,
+      1,
+      365
+    ),
+    strategy: normalizeStrategy(rawSettings.memoryStrategy),
+    skillsEnabled: toBoolean(rawSettings.skillsEnabled, DEFAULT_MEMORY_SETTINGS.skillsEnabled),
+    embeddingSource: normalizeEmbeddingSource(rawSettings.memoryEmbeddingSource),
+    embeddingProviderModel: normalizeNullableString(
+      rawSettings.memoryEmbeddingProviderModel,
+      DEFAULT_MEMORY_SETTINGS.embeddingProviderModel
+    ),
+    customBaseUrl: normalizeCustomBaseUrl(rawSettings.memoryEmbeddingCustomBaseUrl),
+    customModelId: normalizeCustomString(rawSettings.memoryEmbeddingCustomModelId),
+    transformersEnabled: toBoolean(
+      rawSettings.memoryTransformersEnabled,
+      DEFAULT_MEMORY_SETTINGS.transformersEnabled
+    ),
+    staticEnabled: toBoolean(
+      rawSettings.memoryStaticEnabled,
+      DEFAULT_MEMORY_SETTINGS.staticEnabled
+    ),
+    rerankEnabled: toBoolean(
+      rawSettings.memoryRerankEnabled,
+      DEFAULT_MEMORY_SETTINGS.rerankEnabled
+    ),
+    rerankProviderModel: normalizeNullableString(
+      rawSettings.memoryRerankProviderModel,
+      DEFAULT_MEMORY_SETTINGS.rerankProviderModel
+    ),
+    vectorStore: normalizeVectorStore(rawSettings.memoryVectorStore),
+    primaryBackend:
+      typeof rawSettings.memoryPrimaryBackend === "string"
+        ? rawSettings.memoryPrimaryBackend
+        : DEFAULT_MEMORY_SETTINGS.primaryBackend,
+    fallbackBackends: Array.isArray(rawSettings.memoryFallbackBackends)
+      ? rawSettings.memoryFallbackBackends.filter((v): v is string => typeof v === "string")
+      : DEFAULT_MEMORY_SETTINGS.fallbackBackends,
+    backendConfigs:
+      typeof rawSettings.memoryBackendConfigs === "object" &&
+      rawSettings.memoryBackendConfigs !== null
+        ? (rawSettings.memoryBackendConfigs as Record<string, Record<string, unknown>>)
+        : DEFAULT_MEMORY_SETTINGS.backendConfigs,
+  };
+}
+
+export function toMemorySettingsUpdates(
+  settings: Partial<MemorySettings>
+): Record<string, unknown> {
+  const updates: Record<string, unknown> = {};
+  if (settings.enabled !== undefined) updates.memoryEnabled = settings.enabled;
+  if (settings.maxTokens !== undefined) updates.memoryMaxTokens = settings.maxTokens;
+  if (settings.retentionDays !== undefined) updates.memoryRetentionDays = settings.retentionDays;
+  if (settings.strategy !== undefined) updates.memoryStrategy = settings.strategy;
+  if (settings.skillsEnabled !== undefined) updates.skillsEnabled = settings.skillsEnabled;
+  if (settings.embeddingSource !== undefined)
+    updates.memoryEmbeddingSource = settings.embeddingSource;
+  if (settings.embeddingProviderModel !== undefined)
+    updates.memoryEmbeddingProviderModel = settings.embeddingProviderModel;
+  if (settings.customBaseUrl !== undefined)
+    updates.memoryEmbeddingCustomBaseUrl = settings.customBaseUrl;
+  if (settings.customModelId !== undefined)
+    updates.memoryEmbeddingCustomModelId = settings.customModelId;
+  if (settings.transformersEnabled !== undefined)
+    updates.memoryTransformersEnabled = settings.transformersEnabled;
+  if (settings.staticEnabled !== undefined) updates.memoryStaticEnabled = settings.staticEnabled;
+  if (settings.rerankEnabled !== undefined) updates.memoryRerankEnabled = settings.rerankEnabled;
+  if (settings.rerankProviderModel !== undefined)
+    updates.memoryRerankProviderModel = settings.rerankProviderModel;
+  if (settings.vectorStore !== undefined) updates.memoryVectorStore = settings.vectorStore;
+  if (settings.primaryBackend !== undefined) updates.memoryPrimaryBackend = settings.primaryBackend;
+  if (settings.fallbackBackends !== undefined)
+    updates.memoryFallbackBackends = settings.fallbackBackends;
+  if (settings.backendConfigs !== undefined) updates.memoryBackendConfigs = settings.backendConfigs;
+
+  return updates;
+}
 
 export function toMemoryRetrievalConfig(
-  _settings: MemorySettings,
-  _options: { query?: string }
-): unknown {
-  return {};
+  settings: MemorySettings,
+  extra: { query?: string } = {}
+): Record<string, unknown> {
+  const enabled = settings.enabled && settings.maxTokens > 0;
+
+  const config: Record<string, unknown> = {
+    enabled,
+    maxTokens: enabled ? settings.maxTokens : 0,
+    retrievalStrategy: settings.strategy === "recent" ? "exact" : settings.strategy,
+    autoSummarize: false,
+    persistAcrossModels: false,
+    retentionDays: settings.retentionDays,
+    scope: "apiKey",
+  };
+
+  // Forward the last user message as `query` for query-driven strategies only;
+  // "recent" is recency-based and relevance filtering would drop memories.
+  if (extra.query && extra.query.trim().length > 0 && settings.strategy !== "recent") {
+    config.query = extra.query.trim();
+  }
+
+  return config;
+}
+
+export async function getMemorySettings(): Promise<MemorySettings> {
+  if (cachedMemorySettings !== null) {
+    return cachedMemorySettings;
+  }
+
+  const settings = (await getSettings()) as Record<string, unknown>;
+  cachedMemorySettings = normalizeMemorySettings(settings);
+  return cachedMemorySettings;
+}
+
+export function invalidateMemorySettingsCache(): void {
+  cachedMemorySettings = null;
 }

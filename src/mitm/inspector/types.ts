@@ -87,18 +87,6 @@ export interface NormalizedConversation {
   contextKey: string | null;
 }
 
-export interface LlmMetadata {
-  provider: string | null;
-  apiKind: string | null;
-  model: string | null;
-  messages: number;
-  tokensIn: number | null;
-  tokensOut: number | null;
-  streamed: boolean;
-  mappedTo: string | null;
-  costEstimateUsd: number | null;
-}
-
 export type WsEvent =
   | { type: "snapshot"; data: InterceptedRequest[] }
   | { type: "new"; data: InterceptedRequest }
