@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { compareTr } from "@/shared/utils/turkishText";
-import type { ModelReasoningCapabilities } from "@/app/(dashboard)/dashboard/playground/components/reasoningControlUtils";
+// Local copy of the playground's ModelReasoningCapabilities shape (the
+// playground components were removed by the lean-gateway pruning; the
+// translator only needs the shape for its capabilities map).
+type ModelReasoningCapabilities = {
+  supportsThinking?: boolean | null;
+  effort_tiers?: unknown;
+};
 
 /**
  * Prefix-based format→model matching, used to pick a smart default

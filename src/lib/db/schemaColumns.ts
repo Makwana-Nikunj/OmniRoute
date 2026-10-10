@@ -145,6 +145,10 @@ export function ensureUsageHistoryColumns(db: SqliteDatabase) {
       db.exec("ALTER TABLE usage_history ADD COLUMN account_label_priority INTEGER DEFAULT 0");
       console.log("[DB] Added usage_history.account_label_priority column");
     }
+    if (!columnNames.has("project_id")) {
+      db.exec("ALTER TABLE usage_history ADD COLUMN project_id TEXT DEFAULT NULL");
+      console.log("[DB] Added usage_history.project_id column");
+    }
     db.exec(
       "CREATE INDEX IF NOT EXISTS idx_uh_provider_model_timestamp ON usage_history(provider, model, timestamp)"
     );
@@ -252,6 +256,10 @@ export function ensureCallLogsColumns(db: SqliteDatabase) {
       db.exec("ALTER TABLE call_logs ADD COLUMN session_tag TEXT DEFAULT NULL");
       console.log("[DB] Added call_logs.session_tag column");
     }
+    if (!columnNames.has("project_id")) {
+      db.exec("ALTER TABLE call_logs ADD COLUMN project_id TEXT DEFAULT NULL");
+      console.log("[DB] Added call_logs.project_id column");
+    }
 
     db.exec(
       "CREATE INDEX IF NOT EXISTS idx_call_logs_requested_model ON call_logs(requested_model)"
@@ -281,6 +289,22 @@ export function ensureProxyLogsColumns(db: SqliteDatabase) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn("[DB] Failed to verify proxy_logs schema:", message);
+  }
+}
+
+export function ensureCombosColumns(db: SqliteDatabase) {
+  try {
+    const columns = db.prepare("PRAGMA table_info(combos)").all() as Array<{
+      name?: string;
+    }>;
+    const columnNames = new Set(columns.map((column) => String(column.name ?? "")));
+    if (!columnNames.has("project_id")) {
+      db.exec("ALTER TABLE combos ADD COLUMN project_id TEXT DEFAULT NULL");
+      console.log("[DB] Added combos.project_id column");
+    }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[DB] Failed to verify combos schema:", message);
   }
 }
 

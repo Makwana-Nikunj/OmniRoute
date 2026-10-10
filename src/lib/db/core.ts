@@ -309,10 +309,32 @@ const SCHEMA_SQL = `
     PRIMARY KEY (namespace, key)
   );
 
+  CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS provider_states (
+    provider TEXT PRIMARY KEY,
+    is_enabled INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS provider_oauth_configs (
+    provider TEXT PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    client_secret TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS combos (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     data TEXT NOT NULL,
+    project_id TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -355,6 +377,7 @@ const SCHEMA_SQL = `
     latency_ms INTEGER DEFAULT 0,
     ttft_ms INTEGER DEFAULT 0,
     error_code TEXT,
+    project_id TEXT,
     timestamp TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_uh_timestamp ON usage_history(timestamp);
@@ -385,6 +408,7 @@ const SCHEMA_SQL = `
     target_format TEXT,
     api_key_id TEXT,
     api_key_name TEXT,
+    project_id TEXT,
     combo_name TEXT,
     combo_step_id TEXT,
     combo_execution_key TEXT,
